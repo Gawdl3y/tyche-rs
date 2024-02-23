@@ -2,7 +2,7 @@ use crate::dice::{Dice, Error as DiceError, Roll};
 
 /// Generates an implementation of TermType and DescribeBinaryExpr for an enum type.
 /// This is very tightly coupled with the expected variants (Val, Dice, Neg, Add, Sub, Mul, DivDown, DivUp).
-macro_rules! impl_type {
+macro_rules! term_type_impl {
 	($name:ty) => {
 		impl HasTermType for $name {
 			fn term_type(&self) -> TermType {
@@ -53,7 +53,7 @@ pub enum Term {
 	DivUp(Box<Self>, Box<Self>),
 }
 
-impl_type!(Term);
+term_type_impl!(Term);
 
 impl Term {
 	/// Evaluates the term
@@ -134,7 +134,7 @@ pub enum EvaledTerm<'a> {
 	DivUp(Box<Self>, Box<Self>),
 }
 
-impl_type!(EvaledTerm<'_>);
+term_type_impl!(EvaledTerm<'_>);
 
 impl EvaledTerm<'_> {
 	/// Calculates the total of the evaluated term
