@@ -110,7 +110,7 @@ impl fmt::Display for Dice {
 }
 
 /// Representation of the result from rolling a single set of [Dice]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Roll<'a> {
 	/// Each individual die result rolled
 	pub rolls: Vec<u8>,

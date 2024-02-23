@@ -117,7 +117,7 @@ impl std::fmt::Display for Term {
 }
 
 /// Individual evaluated terms from dice expressions
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EvaledTerm<'a> {
 	// Values
 	Num(i32),
