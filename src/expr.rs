@@ -241,7 +241,10 @@ pub trait Describe {
 	fn describe(&self, max_rolls: Option<usize>) -> String;
 }
 
+/// Trait for describing binary expressions with influence from own type.
+/// Used for, e.g. wrapping parentheses around parts of expressions based on [TermType] of self and the expression.
 trait DescribeBinaryExpr: HasTermType + Describe {
+	/// Builds a detailed description for a binary expression with parentheses around parts of it if appropriate
 	fn describe_binary_expr(
 		&self,
 		op: char,
