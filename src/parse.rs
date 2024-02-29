@@ -1,3 +1,5 @@
+#![cfg(feature = "parse")]
+
 use chumsky::prelude::*;
 
 use crate::dice::Dice;

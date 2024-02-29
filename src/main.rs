@@ -50,3 +50,8 @@ fn main() {
 		Err(parse_errs) => parse_errs.into_iter().for_each(|e| eprintln!("Parse error: {}", e)),
 	};
 }
+
+#[cfg(not(feature = "parse"))]
+fn main() {
+	println!("Nothing to do since the parse feature is disabled.")
+}
