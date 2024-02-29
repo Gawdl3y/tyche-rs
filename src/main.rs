@@ -34,15 +34,15 @@ fn main() {
 				Ok(evaled) => {
 					println!();
 					println!("Evaluated: {:?}", evaled);
+					println!("Described: {}", evaled);
 					println!(
-						"Calculated total: {}",
+						"Total: {}",
 						evaled
 							.calc()
 							.map(|total| total.to_string())
 							.or_else(|err| Ok::<_, dicey::expr::Error>(err.to_string()))
 							.unwrap()
 					);
-					println!("Described: {}", evaled);
 				}
 				Err(eval_err) => eprintln!("Evaluation error: {}", eval_err),
 			}
