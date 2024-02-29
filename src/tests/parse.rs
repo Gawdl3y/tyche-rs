@@ -1,67 +1,77 @@
 use chumsky::Parser;
 
-use crate::*;
+use crate::{dice::Dice, expr::Term, parser};
 
-// #[test]
-// fn basic_addition() {
-// 	let ast = parser().parse("42 + 69").unwrap();
-// 	let result = ast.eval().unwrap();
-// 	assert_eq!(result.val, 111);
-// }
+#[test]
+fn basic_negation() {
+	let expected = Term::Neg(Box::new(Term::Num(42)));
+	let ast = parser().parse("-42").unwrap();
+	assert_eq!(ast, expected);
+}
 
-// #[test]
-// fn basic_subtraction() {
-// 	let ast = parser().parse("42 - 69").unwrap();
-// 	let result = ast.eval().unwrap();
-// 	assert_eq!(result.val, -27);
-// }
+#[test]
+fn basic_addition() {
+	let expected = Term::Add(Box::new(Term::Num(42)), Box::new(Term::Num(69)));
+	let ast = parser().parse("42 + 69").unwrap();
+	assert_eq!(ast, expected);
+}
 
-// #[test]
-// fn basic_multiplication() {
-// 	let ast = parser().parse("42 * 69").unwrap();
-// 	let result = ast.eval().unwrap();
-// 	assert_eq!(result.val, 2898);
-// }
+#[test]
+fn basic_subtraction() {
+	let expected = Term::Sub(Box::new(Term::Num(42)), Box::new(Term::Num(69)));
+	let ast = parser().parse("42 - 69").unwrap();
+	assert_eq!(ast, expected);
+}
 
-// #[test]
-// fn basic_division_rounded_down() {
-// 	let ast = parser().parse("50 / 11").unwrap();
-// 	let result = ast.eval().unwrap();
-// 	assert_eq!(result.val, 4);
-// }
+#[test]
+fn basic_multiplication() {
+	let expected = Term::Mul(Box::new(Term::Num(42)), Box::new(Term::Num(69)));
+	let ast = parser().parse("42 * 69").unwrap();
+	assert_eq!(ast, expected);
+}
 
-// #[test]
-// fn basic_division_rounded_up() {
-// 	let ast = parser().parse("50 \\ 11").unwrap();
-// 	let result = ast.eval().unwrap();
-// 	assert_eq!(result.val, 5);
-// }
+#[test]
+fn basic_division_rounded_down() {
+	let expected = Term::DivDown(Box::new(Term::Num(50)), Box::new(Term::Num(11)));
+	let ast = parser().parse("50 / 11").unwrap();
+	assert_eq!(ast, expected);
+}
 
-// #[test]
-// fn complex_math() {
-// 	let ast = parser().parse("-5 * (3 + 1) - -4 / 2").unwrap();
-// 	let result = ast.eval().unwrap();
-// 	assert_eq!(result.val, -18);
-// }
+#[test]
+fn basic_division_rounded_up() {
+	let expected = Term::DivUp(Box::new(Term::Num(50)), Box::new(Term::Num(11)));
+	let ast = parser().parse("50 \\ 11").unwrap();
+	assert_eq!(ast, expected);
+}
 
-// #[test]
-// fn basic_dice_math() {
-// 	let ast = parser().parse("4d5 + 20").unwrap();
-// 	let result = ast.eval().unwrap();
-// 	assert!(result.val > 20);
-// }
+#[test]
+fn complex_math() {
+	let expected = Term::Sub(
+		Box::new(Term::Mul(
+			Box::new(Term::Neg(Box::new(Term::Num(5)))),
+			Box::new(Term::Add(Box::new(Term::Num(3)), Box::new(Term::Num(1)))),
+		)),
+		Box::new(Term::DivDown(
+			Box::new(Term::Neg(Box::new(Term::Num(4)))),
+			Box::new(Term::Num(2)),
+		)),
+	);
+	let ast = parser().parse("-5 * (3 + 1) - -4 / 2").unwrap();
+	assert_eq!(ast, expected);
+}
 
-// #[test]
-// fn eval_overflow() {
-// 	let ast = parser().parse(&format!("{} + 1", i32::MAX)).unwrap();
-// 	let result = ast.eval();
-// 	assert!(result.is_err());
-// 	assert!(result.unwrap_err().to_string().contains("overflow"));
-// }
+#[test]
+fn basic_dice_math() {
+	let dice = Dice::new(4, 6);
+	let expected = Term::Add(Box::new(Term::Dice(dice)), Box::new(Term::Num(8)));
+	let ast = parser().parse("4d6 + 8").unwrap();
+	assert_eq!(ast, expected);
+}
 
-// #[test]
-// fn invalid_token() {
-// 	let bigboi = i32::MAX as i64 + 1;
-// 	let ast = parser().parse(&format!("{}", bigboi));
-// 	assert!(ast.has_errors());
-// }
+#[test]
+fn invalid_token() {
+	let bigboi = i32::MAX as i64 + 1;
+	let expr = format!("{}", bigboi);
+	let ast = parser().parse(&expr);
+	assert!(ast.has_errors());
+}
