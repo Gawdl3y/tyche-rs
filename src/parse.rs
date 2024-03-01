@@ -2,7 +2,7 @@
 
 use chumsky::prelude::*;
 
-use crate::dice::Dice;
+use crate::dice::{Dice, Modifier};
 use crate::expr::Term;
 
 pub fn parser<'a>() -> impl Parser<'a, &'a str, Term, extra::Err<Rich<'a, char>>> {
@@ -37,7 +37,15 @@ pub fn parser<'a>() -> impl Parser<'a, &'a str, Term, extra::Err<Rich<'a, char>>
 					.map_err(|e| Rich::custom(span, format!("Error in dice sides: {}", e)))?;
 				let explode = vals.1.is_some();
 
-				Ok(Term::Dice(Dice { count, sides, explode }))
+				Ok(Term::Dice(Dice {
+					count,
+					sides,
+					modifiers: if explode {
+						vec![Modifier::Explode(None, true)]
+					} else {
+						Vec::new()
+					},
+				}))
 			});
 
 		// Parser for expressions enclosed in parentheses

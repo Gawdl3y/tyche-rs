@@ -1,4 +1,4 @@
-use crate::dice::{Dice, Error as DiceError, Roll};
+use crate::dice::{Dice, Error as DiceError, Rolls};
 
 /// Generates an implementation of TermType and DescribeBinaryExpr for an enum type.
 /// This is very tightly coupled with the expected variants (Val, Dice, Neg, Add, Sub, Mul, DivDown, DivUp).
@@ -121,7 +121,7 @@ impl std::fmt::Display for Term {
 pub enum EvaledTerm<'a> {
 	// Values
 	Num(i32),
-	Dice(Roll<'a>),
+	Dice(Rolls<'a>),
 
 	// Unary operators
 	Neg(Box<Self>),
