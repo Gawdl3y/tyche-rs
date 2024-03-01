@@ -101,13 +101,17 @@ pub enum Modifier {
 
 impl Modifier {
 	/// Applies the modifier to a set of rolls using the default Rng where needed
-	pub fn apply<'a>(&'a self, rolls: &mut Rolls<'a>) -> Result<(), Error> {
+	pub fn apply<'rolls, 'modifier: 'rolls>(&'modifier self, rolls: &mut Rolls<'rolls>) -> Result<(), Error> {
 		let mut rng = Rng::new();
 		self.apply_with_rng(rolls, &mut rng)
 	}
 
 	/// Applies the modifier to a set of rolls using a given Rng where needed
-	pub fn apply_with_rng<'a>(&'a self, rolls: &mut Rolls<'a>, rng: &mut Rng) -> Result<(), Error> {
+	pub fn apply_with_rng<'rolls, 'modifier: 'rolls>(
+		&'modifier self,
+		rolls: &mut Rolls<'rolls>,
+		rng: &mut Rng,
+	) -> Result<(), Error> {
 		match self {
 			Self::Explode(cond, recurse) => {
 				// Don't allow recursively exploding dice with 1 side since that would result in infinite explosions
