@@ -101,13 +101,13 @@ pub enum Modifier {
 
 impl Modifier {
 	/// Applies the modifier to a set of rolls using the default Rng where needed
-	pub fn apply(&self, rolls: &mut Rolls) -> Result<(), Error> {
+	pub fn apply<'a>(&'a self, rolls: &mut Rolls<'a>) -> Result<(), Error> {
 		let mut rng = Rng::new();
 		self.apply_with_rng(rolls, &mut rng)
 	}
 
 	/// Applies the modifier to a set of rolls using a given Rng where needed
-	pub fn apply_with_rng(&self, rolls: &mut Rolls, rng: &mut Rng) -> Result<(), Error> {
+	pub fn apply_with_rng<'a>(&'a self, rolls: &mut Rolls<'a>, rng: &mut Rng) -> Result<(), Error> {
 		match self {
 			Self::Explode(cond, recurse) => {
 				// Don't allow recursively exploding dice with 1 side since that would result in infinite explosions
@@ -133,7 +133,7 @@ impl Modifier {
 					let mut explosions = Vec::with_capacity(to_explode);
 					for _ in 0..to_explode {
 						let mut roll = rolls.dice.roll_single_with_rng(rng);
-						roll.added_by = Some(self.clone());
+						roll.added_by = Some(self);
 						explosions.push(roll);
 					}
 
@@ -246,18 +246,18 @@ impl fmt::Display for Condition {
 
 /// Represents a single rolled die
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DieRoll {
+pub struct DieRoll<'a> {
 	/// Value that was rolled
 	pub val: NonZeroU8,
 
 	/// Modifier that caused the addition of this die
-	pub added_by: Option<Modifier>,
+	pub added_by: Option<&'a Modifier>,
 
 	/// Modifier that caused the drop of this die
-	pub dropped_by: Option<Modifier>,
+	pub dropped_by: Option<&'a Modifier>,
 }
 
-impl DieRoll {
+impl DieRoll<'_> {
 	/// Checks whether this die roll was part of the original set, not from a modifier
 	pub fn is_original(&self) -> bool {
 		self.added_by.is_none()
@@ -289,7 +289,7 @@ impl DieRoll {
 	}
 }
 
-impl fmt::Display for DieRoll {
+impl fmt::Display for DieRoll<'_> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "{}{}", self.val, if self.is_dropped() { " (d)" } else { "" })
 	}
@@ -299,7 +299,7 @@ impl fmt::Display for DieRoll {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rolls<'a> {
 	/// Each individual die roll
-	pub rolls: Vec<DieRoll>,
+	pub rolls: Vec<DieRoll<'a>>,
 
 	/// Dice that were rolled to obtain this
 	pub dice: &'a Dice,
