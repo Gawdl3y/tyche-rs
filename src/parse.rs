@@ -1,12 +1,16 @@
 #![cfg(feature = "parse")]
 
+use std::num::NonZeroU8;
+
 use chumsky::prelude::*;
 
-use crate::dice::Dice;
-use crate::expr::Term;
+use crate::{
+	dice::{Condition, Dice, Modifier},
+	expr::Term,
+};
 
-pub fn parser<'a>() -> impl Parser<'a, &'a str, Term, extra::Err<Rich<'a, char>>> {
-	// Helper functions for operators
+pub fn parser<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, char>>> {
+	// Helper function for operators
 	let op = |c| just(c).padded();
 
 	recursive(|expr| {
@@ -17,27 +21,54 @@ pub fn parser<'a>() -> impl Parser<'a, &'a str, Term, extra::Err<Rich<'a, char>>
 				.map_err(|e| Rich::custom(span, format!("{}", e)))
 		});
 
+		// Parser for dice modifier conditions
+		let condition = choice((
+			just('=').to(Condition::Eq as fn(NonZeroU8) -> _),
+			just('>').to(Condition::Gt as fn(NonZeroU8) -> _),
+			just(">=").to(Condition::Gte as fn(NonZeroU8) -> _),
+			just('<').to(Condition::Lt as fn(NonZeroU8) -> _),
+			just(">=").to(Condition::Lte as fn(NonZeroU8) -> _),
+		))
+		.or_not()
+		.then(text::int::<&'src str, _, _>(10))
+		.try_map(|(condfn, val), span| {
+			let val = val
+				.parse()
+				.map_err(|err| Rich::custom(span, format!("Modifier condition: {}", err)))?;
+			Ok(match condfn {
+				Some(condfn) => condfn(val),
+				None => Condition::Eq(val),
+			})
+		});
+
 		// Parser for dice expressions
 		let dice = text::int(10)
 			.or_not()
-			.then_ignore(just('d').or(just('D')))
-			.then(text::int::<_, _, extra::Err<Rich<char>>>(10))
-			.then((just('x').or(just('X'))).or_not())
-			.try_map(|vals: ((Option<&str>, &str), Option<char>), span| {
-				let count = vals
-					.0
-					 .0
-					.map(|v| v.parse())
-					.unwrap_or(Ok(1))
-					.map_err(|e| Rich::custom(span, format!("Error in dice count: {}", e)))?;
-				let sides = vals
-					.0
-					 .1
+			.then_ignore(just('d'))
+			.then(text::int(10))
+			.then(
+				choice((just('x')
+					.ignored()
+					.then(just('o').ignored().or_not().map(|o| o.is_none()))
+					.then(condition.or_not())
+					.map(|((_, once), cond)| Modifier::Explode(cond, once)),))
+				.repeated()
+				.collect(),
+			)
+			.try_map(|((count, sides), modifiers), span| {
+				let count = count
+					.unwrap_or("1")
 					.parse()
-					.map_err(|e| Rich::custom(span, format!("Error in dice sides: {}", e)))?;
-				let explode = vals.1.is_some();
+					.map_err(|err| Rich::custom(span, format!("Dice count: {}", err)))?;
+				let sides = sides
+					.parse()
+					.map_err(|err| Rich::custom(span, format!("Dice sides: {}", err)))?;
 
-				Ok(Term::Dice(Dice { count, sides, explode }))
+				Ok(Term::Dice(Dice {
+					count,
+					sides,
+					modifiers,
+				}))
 			});
 
 		// Parser for expressions enclosed in parentheses
