@@ -125,12 +125,10 @@ impl Modifier {
 				let mut to_explode = rolled
 					.rolls
 					.iter()
-					.filter(|r| {
-						if let Some(cond) = cond {
-							cond.check(r.val)
-						} else {
-							r.val == rolled.dice.sides
-						}
+					.filter(|r| !r.is_dropped())
+					.filter(|r| match cond {
+						Some(cond) => cond.check(r.val),
+						None => r.val == rolled.dice.sides,
 					})
 					.count();
 
@@ -148,12 +146,9 @@ impl Modifier {
 						.then(|| {
 							explosions
 								.iter()
-								.filter(|r| {
-									if let Some(cond) = cond {
-										cond.check(r.val)
-									} else {
-										r.val == rolled.dice.sides
-									}
+								.filter(|r| match cond {
+									Some(cond) => cond.check(r.val),
+									None => r.val == rolled.dice.sides,
 								})
 								.count()
 						})
@@ -167,7 +162,7 @@ impl Modifier {
 			}
 
 			Self::KeepHigh(count) => {
-				let mut refs = rolled.rolls.iter_mut().collect::<Vec<_>>();
+				let mut refs = rolled.rolls.iter_mut().filter(|r| !r.is_dropped()).collect::<Vec<_>>();
 				refs.sort();
 				refs.reverse();
 				refs.iter_mut()
@@ -176,7 +171,7 @@ impl Modifier {
 			}
 
 			Self::KeepLow(count) => {
-				let mut refs = rolled.rolls.iter_mut().collect::<Vec<_>>();
+				let mut refs = rolled.rolls.iter_mut().filter(|r| !r.is_dropped()).collect::<Vec<_>>();
 				refs.sort();
 				refs.iter_mut()
 					.skip(count.get() as usize)
