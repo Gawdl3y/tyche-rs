@@ -5,7 +5,7 @@ extern crate test;
 use test::Bencher;
 
 use dicey::{
-	dice::{Dice, Roll},
+	dice::{Dice, DieRoll, Rolled},
 	term::Describe,
 };
 
@@ -48,9 +48,8 @@ fn roll_and_total_100d20(b: &mut Bencher) {
 #[bench]
 fn explain_4d8_result(b: &mut Bencher) {
 	let dice = Dice::new(4, 8);
-	let roll = Roll {
-		rolls: vec![6, 8, 3, 4],
-		explosions: None,
+	let roll = Rolled {
+		rolls: vec![DieRoll::new(6), DieRoll::new(6), DieRoll::new(6), DieRoll::new(6)],
 		dice: &dice,
 	};
 	b.iter(|| roll.describe(None))
@@ -59,9 +58,30 @@ fn explain_4d8_result(b: &mut Bencher) {
 #[bench]
 fn explain_8d6x_result(b: &mut Bencher) {
 	let dice = Dice::new_exploding(8, 6);
-	let roll = Roll {
-		rolls: vec![6, 2, 4, 4, 5, 6, 1, 2],
-		explosions: Some(vec![4, 6, 3]),
+	let modifier = dice.modifiers.first();
+	let roll = Rolled {
+		rolls: vec![
+			DieRoll::new(6),
+			DieRoll::new(2),
+			DieRoll::new(4),
+			DieRoll::new(4),
+			DieRoll::new(5),
+			DieRoll::new(6),
+			DieRoll::new(1),
+			DieRoll::new(2),
+			DieRoll {
+				added_by: modifier,
+				..DieRoll::new(4)
+			},
+			DieRoll {
+				added_by: modifier,
+				..DieRoll::new(6)
+			},
+			DieRoll {
+				added_by: modifier,
+				..DieRoll::new(3)
+			},
+		],
 		dice: &dice,
 	};
 	b.iter(|| roll.describe(None))
