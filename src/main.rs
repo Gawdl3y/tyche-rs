@@ -25,7 +25,7 @@ fn main() {
 
 	println!("Input: {}", input);
 
-	match dicey::parser().parse(&input).into_result() {
+	match dicey::parse::expr().parse(&input).into_result() {
 		Ok(ast) => {
 			println!("Parsed: {:?}", ast);
 			println!("Deterministic: {}", ast.is_deterministic());
