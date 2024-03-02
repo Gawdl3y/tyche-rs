@@ -1,46 +1,46 @@
 use std::num::NonZeroU8;
 
-use crate::dice::{Dice, DieRoll, Modifier, Rolls};
+use crate::dice::{Dice, DieRoll, Modifier, Rolled};
 
 #[test]
 fn single_d20() {
 	let dice = construct_plain(1, 20);
-	let rolls = rolls_successfully_and_in_range(&dice);
-	assert_eq!(rolls.rolls.len(), 1);
-	assert_eq!(rolls.dice, &dice);
+	let rolled = rolls_successfully_and_in_range(&dice);
+	assert_eq!(rolled.rolls.len(), 1);
+	assert_eq!(rolled.dice, &dice);
 }
 
 #[test]
 fn double_d8() {
 	let dice = construct_plain(2, 8);
-	let rolls = rolls_successfully_and_in_range(&dice);
-	assert_eq!(rolls.rolls.len(), 2);
-	assert_eq!(rolls.dice, &dice);
+	let rolled = rolls_successfully_and_in_range(&dice);
+	assert_eq!(rolled.rolls.len(), 2);
+	assert_eq!(rolled.dice, &dice);
 }
 
 #[test]
 fn hundred_d42s() {
 	let dice = construct_plain(100, 42);
-	let rolls = rolls_successfully_and_in_range(&dice);
-	assert_eq!(rolls.rolls.len(), 100);
-	assert_eq!(rolls.dice, &dice);
+	let rolled = rolls_successfully_and_in_range(&dice);
+	assert_eq!(rolled.rolls.len(), 100);
+	assert_eq!(rolled.dice, &dice);
 }
 
 #[test]
 fn max_dice() {
 	let dice = construct_plain(u8::MAX, u8::MAX);
-	let rolls = rolls_successfully_and_in_range(&dice);
-	assert_eq!(rolls.rolls.len(), u8::MAX as usize);
-	assert_eq!(rolls.dice, &dice);
+	let rolled = rolls_successfully_and_in_range(&dice);
+	assert_eq!(rolled.rolls.len(), u8::MAX as usize);
+	assert_eq!(rolled.dice, &dice);
 }
 
 #[test]
 fn exploding_max_d4s() {
 	let dice = construct_exploding(u8::MAX, 4);
-	let rolls = rolls_successfully_and_in_range(&dice);
-	assert!(rolls.rolls.len() > u8::MAX as usize);
+	let rolled = rolls_successfully_and_in_range(&dice);
+	assert!(rolled.rolls.len() > u8::MAX as usize);
 
-	let explosions = rolls
+	let explosions = rolled
 		.rolls
 		.into_iter()
 		.filter(|roll| !roll.is_original())
@@ -56,9 +56,9 @@ fn all_dice_sides_occur() {
 	let mut rolls = Vec::new();
 
 	for _ in 1..=1000 {
-		let roll = dice.roll();
-		assert!(roll.is_ok());
-		rolls.append(&mut roll.unwrap().rolls);
+		let rolled = dice.roll();
+		assert!(rolled.is_ok());
+		rolls.append(&mut rolled.unwrap().rolls);
 	}
 
 	rolls_in_range(&rolls, 20);
@@ -94,7 +94,7 @@ fn dice_inequality() {
 fn roll_equality() {
 	let da = Dice::new_exploding(4, 8);
 	let db = Dice::new_exploding(4, 8);
-	let ra = Rolls {
+	let ra = Rolled {
 		rolls: vec![
 			DieRoll::new(4),
 			DieRoll::new(5),
@@ -111,7 +111,7 @@ fn roll_equality() {
 		],
 		dice: &da,
 	};
-	let rb = Rolls {
+	let rb = Rolled {
 		rolls: vec![
 			DieRoll::new(4),
 			DieRoll::new(5),
@@ -135,7 +135,7 @@ fn roll_equality() {
 fn roll_inequality() {
 	let da = Dice::new_exploding(4, 8);
 	let db = Dice::new_exploding(4, 8);
-	let ra = Rolls {
+	let ra = Rolled {
 		rolls: vec![
 			DieRoll::new(4),
 			DieRoll::new(5),
@@ -152,7 +152,7 @@ fn roll_inequality() {
 		],
 		dice: &da,
 	};
-	let rb = Rolls {
+	let rb = Rolled {
 		rolls: vec![
 			DieRoll::new(4),
 			DieRoll::new(6),
@@ -173,7 +173,7 @@ fn roll_inequality() {
 
 	let da = Dice::new_exploding(4, 8);
 	let db = Dice::new(4, 8);
-	let ra = Rolls {
+	let ra = Rolled {
 		rolls: vec![
 			DieRoll::new(4),
 			DieRoll::new(5),
@@ -190,7 +190,7 @@ fn roll_inequality() {
 		],
 		dice: &da,
 	};
-	let rb = Rolls {
+	let rb = Rolled {
 		rolls: vec![DieRoll::new(4), DieRoll::new(5), DieRoll::new(8), DieRoll::new(8)],
 		dice: &db,
 	};
@@ -214,14 +214,14 @@ fn construct_exploding(count: u8, sides: u8) -> Dice {
 	dice
 }
 
-fn rolls_successfully_and_in_range<'a>(dice: &'a Dice) -> Rolls<'a> {
+fn rolls_successfully_and_in_range<'a>(dice: &'a Dice) -> Rolled<'a> {
 	let result = dice.roll();
 	assert!(result.is_ok());
 
-	let rolls = result.unwrap();
-	rolls_in_range(&rolls.rolls, rolls.dice.sides.into());
+	let rolled = result.unwrap();
+	rolls_in_range(&rolled.rolls, rolled.dice.sides.into());
 
-	rolls
+	rolled
 }
 
 fn rolls_in_range(rolls: &[DieRoll], sides: u8) {

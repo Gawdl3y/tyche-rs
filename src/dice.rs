@@ -19,12 +19,12 @@ pub struct Dice {
 
 impl Dice {
 	/// Rolls the dice using the default Rng
-	pub fn roll(&self) -> Result<Rolls, Error> {
+	pub fn roll(&self) -> Result<Rolled, Error> {
 		self.roll_with_rng(&mut Rng::new())
 	}
 
 	/// Rolls the dice with the given Rng
-	pub fn roll_with_rng(&self, rng: &mut Rng) -> Result<Rolls, Error> {
+	pub fn roll_with_rng(&self, rng: &mut Rng) -> Result<Rolled, Error> {
 		// Roll the dice!
 		let mut rolls = Vec::with_capacity(self.count as usize);
 		for _ in 0..self.count {
@@ -32,7 +32,7 @@ impl Dice {
 		}
 
 		// Apply all modifiers
-		let mut rolls = Rolls { rolls, dice: self };
+		let mut rolls = Rolled { rolls, dice: self };
 		for modifier in self.modifiers.iter() {
 			modifier.apply_with_rng(&mut rolls, rng)?;
 		}
@@ -107,32 +107,32 @@ pub enum Modifier {
 
 impl Modifier {
 	/// Applies the modifier to a set of rolls using the default Rng where needed
-	pub fn apply<'rolls, 'modifier: 'rolls>(&'modifier self, rolls: &mut Rolls<'rolls>) -> Result<(), Error> {
+	pub fn apply<'rolled, 'modifier: 'rolled>(&'modifier self, rolls: &mut Rolled<'rolled>) -> Result<(), Error> {
 		self.apply_with_rng(rolls, &mut Rng::new())
 	}
 
 	/// Applies the modifier to a set of rolls using a given Rng where needed
-	pub fn apply_with_rng<'rolls, 'modifier: 'rolls>(
+	pub fn apply_with_rng<'rolled, 'modifier: 'rolled>(
 		&'modifier self,
-		rolls: &mut Rolls<'rolls>,
+		rolled: &mut Rolled<'rolled>,
 		rng: &mut Rng,
 	) -> Result<(), Error> {
 		match self {
 			Self::Explode(cond, recurse) => {
 				// Don't allow recursively exploding dice with 1 side since that would result in infinite explosions
-				if *recurse && rolls.dice.sides.get() == 1 {
-					return Err(Error::InfiniteExplosion(rolls.dice.clone()));
+				if *recurse && rolled.dice.sides.get() == 1 {
+					return Err(Error::InfiniteExplosion(rolled.dice.clone()));
 				}
 
 				// Determine how many initial rolls qualify for explosion
-				let mut to_explode = rolls
+				let mut to_explode = rolled
 					.rolls
 					.iter()
 					.filter(|r| {
 						if let Some(cond) = cond {
 							cond.check(r.val)
 						} else {
-							r.val == rolls.dice.sides
+							r.val == rolled.dice.sides
 						}
 					})
 					.count();
@@ -141,7 +141,7 @@ impl Modifier {
 					// Roll additional dice
 					let mut explosions = Vec::with_capacity(to_explode);
 					for _ in 0..to_explode {
-						let mut roll = rolls.dice.roll_single_with_rng(rng);
+						let mut roll = rolled.dice.roll_single_with_rng(rng);
 						roll.added_by = Some(self);
 						explosions.push(roll);
 					}
@@ -155,13 +155,13 @@ impl Modifier {
 									if let Some(cond) = cond {
 										cond.check(r.val)
 									} else {
-										r.val == rolls.dice.sides
+										r.val == rolled.dice.sides
 									}
 								})
 								.count()
 						})
 						.unwrap_or(0);
-					rolls.rolls.append(&mut explosions);
+					rolled.rolls.append(&mut explosions);
 
 					if to_explode == 0 {
 						break;
@@ -170,7 +170,7 @@ impl Modifier {
 			}
 
 			Self::KeepHigh(count) => {
-				let mut refs = rolls.rolls.iter_mut().collect::<Vec<_>>();
+				let mut refs = rolled.rolls.iter_mut().collect::<Vec<_>>();
 				refs.sort();
 				refs.reverse();
 				refs.iter_mut()
@@ -179,7 +179,7 @@ impl Modifier {
 			}
 
 			Self::KeepLow(count) => {
-				let mut refs = rolls.rolls.iter_mut().collect::<Vec<_>>();
+				let mut refs = rolled.rolls.iter_mut().collect::<Vec<_>>();
 				refs.sort();
 				refs.iter_mut()
 					.skip(count.get() as usize)
@@ -351,7 +351,7 @@ impl fmt::Display for DieRoll<'_> {
 
 /// Representation of the result from rolling a single set of [Dice]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Rolls<'a> {
+pub struct Rolled<'a> {
 	/// Each individual die roll
 	pub rolls: Vec<DieRoll<'a>>,
 
@@ -359,7 +359,7 @@ pub struct Rolls<'a> {
 	pub dice: &'a Dice,
 }
 
-impl Rolls<'_> {
+impl Rolled<'_> {
 	/// Sums all rolls and explosions
 	pub fn total(&self) -> Result<u16, Error> {
 		let mut sum: u16 = 0;
@@ -373,7 +373,7 @@ impl Rolls<'_> {
 	}
 }
 
-impl Describe for Rolls<'_> {
+impl Describe for Rolled<'_> {
 	/// Builds a string of the dice expression the roll is from and all of the individual rolled dice.
 	/// If max_rolls is specified and there are more rolls than it, the output will be truncated and appended with
 	/// "X more..." (where X is the remaining roll count past the max).
@@ -401,7 +401,7 @@ impl Describe for Rolls<'_> {
 	}
 }
 
-impl fmt::Display for Rolls<'_> {
+impl fmt::Display for Rolled<'_> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{}", self.describe(None))
 	}
