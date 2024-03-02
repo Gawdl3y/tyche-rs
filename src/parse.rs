@@ -47,11 +47,34 @@ pub fn parser<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src
 			.then_ignore(just('d'))
 			.then(text::int(10))
 			.then(
-				choice((just('x')
-					.ignored()
-					.then(just('o').ignored().or_not().map(|o| o.is_none()))
-					.then(condition.or_not())
-					.map(|((_, once), cond)| Modifier::Explode(cond, once)),))
+				choice((
+					just('x')
+						.ignored()
+						.then(just('o').ignored().or_not().map(|o| o.is_none()))
+						.then(condition.or_not())
+						.map(|((_, once), cond)| Modifier::Explode(cond, once)),
+					just("kl")
+						.ignored()
+						.then(text::int(10).or_not())
+						.try_map(|(_, count), span| {
+							let count = count
+								.unwrap_or("1")
+								.parse()
+								.map_err(|err| Rich::custom(span, format!("Keep lowest count: {}", err)))?;
+							Ok(Modifier::KeepLow(count))
+						}),
+					just('k')
+						.ignored()
+						.then_ignore(just('h').or_not())
+						.then(text::int(10).or_not())
+						.try_map(|(_, count), span| {
+							let count = count
+								.unwrap_or("1")
+								.parse()
+								.map_err(|err| Rich::custom(span, format!("Keep highest count: {}", err)))?;
+							Ok(Modifier::KeepHigh(count))
+						}),
+				))
 				.repeated()
 				.collect(),
 			)

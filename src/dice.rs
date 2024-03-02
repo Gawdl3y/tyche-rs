@@ -1,4 +1,4 @@
-use std::{fmt, num::NonZeroU8};
+use std::{cmp, fmt, num::NonZeroU8};
 
 use fastrand::Rng;
 
@@ -97,13 +97,18 @@ pub enum Modifier {
 	/// (default being equal to the number of sides for the dice).
 	/// If the second parameter is `true`, this is done recursively for any additional rolls that also meet the condition.
 	Explode(Option<Condition>, bool),
+
+	/// Keep the highest x dice, dropping the rest
+	KeepHigh(NonZeroU8),
+
+	/// Keep the lowest x dice, dropping the rest
+	KeepLow(NonZeroU8),
 }
 
 impl Modifier {
 	/// Applies the modifier to a set of rolls using the default Rng where needed
 	pub fn apply<'rolls, 'modifier: 'rolls>(&'modifier self, rolls: &mut Rolls<'rolls>) -> Result<(), Error> {
-		let mut rng = Rng::new();
-		self.apply_with_rng(rolls, &mut rng)
+		self.apply_with_rng(rolls, &mut Rng::new())
 	}
 
 	/// Applies the modifier to a set of rolls using a given Rng where needed
@@ -163,6 +168,23 @@ impl Modifier {
 					}
 				}
 			}
+
+			Self::KeepHigh(count) => {
+				let mut refs = rolls.rolls.iter_mut().collect::<Vec<_>>();
+				refs.sort();
+				refs.reverse();
+				refs.iter_mut()
+					.skip(count.get() as usize)
+					.for_each(|roll| roll.dropped_by = Some(self));
+			}
+
+			Self::KeepLow(count) => {
+				let mut refs = rolls.rolls.iter_mut().collect::<Vec<_>>();
+				refs.sort();
+				refs.iter_mut()
+					.skip(count.get() as usize)
+					.for_each(|roll| roll.dropped_by = Some(self));
+			}
 		};
 
 		Ok(())
@@ -176,10 +198,26 @@ impl fmt::Display for Modifier {
 			"{}{}",
 			match self {
 				Self::Explode(_, recurse) => format!("x{}", recurse.then_some("").unwrap_or("o")),
+				Self::KeepHigh(count) => format!(
+					"kh{}",
+					if count.get() > 1 {
+						count.to_string()
+					} else {
+						"".to_owned()
+					}
+				),
+				Self::KeepLow(count) => format!(
+					"kl{}",
+					if count.get() > 1 {
+						count.to_string()
+					} else {
+						"".to_owned()
+					}
+				),
 			},
 			match self {
 				Self::Explode(Some(cond), _) => cond.to_string(),
-				Self::Explode(None, _) => "".to_owned(),
+				Self::Explode(None, _) | Self::KeepHigh(..) | Self::KeepLow(..) => "".to_owned(),
 			}
 		)
 	}
@@ -290,6 +328,18 @@ impl DieRoll<'_> {
 	/// Creates a new DieRoll with a random value using the given Rng
 	pub fn new_rand_with_rng(max: u8, rng: &mut Rng) -> Self {
 		Self::new(rng.u8(1..=max))
+	}
+}
+
+impl PartialOrd for DieRoll<'_> {
+	fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+		Some(self.cmp(other))
+	}
+}
+
+impl Ord for DieRoll<'_> {
+	fn cmp(&self, other: &Self) -> cmp::Ordering {
+		self.val.cmp(&other.val)
 	}
 }
 
