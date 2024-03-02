@@ -59,12 +59,9 @@ impl Dice {
 		}
 	}
 
-	/// Creates a new set of exploding dice with a given count and number of sides
-	pub fn new_exploding(count: u8, sides: u8) -> Self {
-		Self {
-			modifiers: vec![Modifier::Explode(None, true)],
-			..Self::new(count, sides)
-		}
+	/// Creates a new dice builder
+	pub fn builder() -> Builder {
+		Builder::default()
 	}
 }
 
@@ -418,4 +415,45 @@ pub enum Error {
 
 	#[error("unknown condition symbol: {0}")]
 	UnknownCondition(String),
+}
+
+/// Builds [Dice] with a fluent interface
+#[derive(Debug, Clone, Default)]
+pub struct Builder(Dice);
+
+impl Builder {
+	/// Sets the number of dice to roll
+	pub fn count(mut self, count: u8) -> Self {
+		self.0.count = count;
+		self
+	}
+
+	/// Sets the number of sides per die
+	pub fn sides(mut self, sides: NonZeroU8) -> Self {
+		self.0.sides = sides;
+		self
+	}
+
+	/// Adds the exploding modifier to the dice
+	pub fn explode(mut self, cond: Option<Condition>, recurse: bool) -> Self {
+		self.0.modifiers.push(Modifier::Explode(cond, recurse));
+		self
+	}
+
+	/// Adds the keep highest modifier to the dice
+	pub fn keep_high(mut self, count: NonZeroU8) -> Self {
+		self.0.modifiers.push(Modifier::KeepHigh(count));
+		self
+	}
+
+	/// Adds the keep lowest modifier to the dice
+	pub fn keep_low(mut self, count: NonZeroU8) -> Self {
+		self.0.modifiers.push(Modifier::KeepLow(count));
+		self
+	}
+
+	/// Finalizes the dice
+	pub fn build(self) -> Dice {
+		self.0
+	}
 }
