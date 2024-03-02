@@ -136,3 +136,40 @@ pub fn expr<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, 
 	})
 	.then_ignore(end())
 }
+
+#[derive(Debug, Clone)]
+pub struct Error {
+	pub details: String,
+}
+
+impl std::error::Error for Error {
+	fn description(&self) -> &str {
+		&self.details
+	}
+}
+
+impl std::fmt::Display for Error {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}", self.details)
+	}
+}
+
+impl std::str::FromStr for Dice {
+	type Err = Error;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		dice().parse(s).into_result().map_err(|errs| Error {
+			details: errs.iter().map(|err| err.to_string()).collect::<Vec<_>>().join("; "),
+		})
+	}
+}
+
+impl std::str::FromStr for Term {
+	type Err = Error;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		expr().parse(s).into_result().map_err(|errs| Error {
+			details: errs.iter().map(|err| err.to_string()).collect::<Vec<_>>().join("; "),
+		})
+	}
+}
