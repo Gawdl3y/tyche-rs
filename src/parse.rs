@@ -89,12 +89,12 @@ pub fn dice<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, 
 }
 
 /// Generates a parser that handles full expressions including mathematical operations, grouping with parentheses,
-/// dice terms, etc.
-pub fn expr<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, char>>> {
+/// dice expressions, etc.
+pub fn term<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, char>>> {
 	// Helper function for operators
 	let op = |c| just(c).padded();
 
-	recursive(|expr| {
+	recursive(|term| {
 		// Parser for numbers
 		let int = text::int(10).try_map(|s: &str, span| {
 			s.parse()
@@ -106,7 +106,7 @@ pub fn expr<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, 
 		let dice = dice().map(Term::Dice);
 
 		// Parser for expressions enclosed in parentheses
-		let atom = dice.or(int).or(expr.delimited_by(just('('), just(')'))).padded();
+		let atom = dice.or(int).or(term.delimited_by(just('('), just(')'))).padded();
 
 		// Parser for negative sign
 		let unary = op('-').repeated().foldr(atom, |_op, rhs| Term::Neg(Box::new(rhs)));
@@ -168,7 +168,7 @@ impl std::str::FromStr for Term {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		expr().parse(s).into_result().map_err(|errs| Error {
+		term().parse(s).into_result().map_err(|errs| Error {
 			details: errs.iter().map(|err| err.to_string()).collect::<Vec<_>>().join("; "),
 		})
 	}

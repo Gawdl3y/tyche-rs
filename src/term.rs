@@ -1,6 +1,6 @@
 use crate::dice::{Dice, Error as DiceError, Rolls};
 
-/// Generates an implementation of TermType and DescribeBinaryExpr for an enum type.
+/// Generates an implementation of [TermType] and [DescribeBinaryTerm] for an enum type.
 /// This is very tightly coupled with the expected variants (Val, Dice, Neg, Add, Sub, Mul, DivDown, DivUp).
 macro_rules! term_type_impl {
 	($name:ty) => {
@@ -31,11 +31,11 @@ macro_rules! term_type_impl {
 			}
 		}
 
-		impl DescribeBinaryExpr for $name {}
+		impl DescribeBinaryTerm for $name {}
 	};
 }
 
-/// Individual terms usable in dice expressions
+/// Individual terms usable in expressions
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Term {
 	// Values
@@ -84,7 +84,7 @@ impl Term {
 		}
 	}
 
-	/// Builds a usable dice expression from the terms
+	/// Builds a full usable expression from the terms
 	pub fn expression(&self) -> String {
 		match self {
 			Self::Num(x) => x.to_string(),
@@ -95,11 +95,11 @@ impl Term {
 				_ => format!("-({})", x.expression()),
 			},
 
-			Self::Add(a, b) => self.describe_binary_expr('+', a.as_ref(), b.as_ref(), None),
-			Self::Sub(a, b) => self.describe_binary_expr('-', a.as_ref(), b.as_ref(), None),
-			Self::Mul(a, b) => self.describe_binary_expr('*', a.as_ref(), b.as_ref(), None),
-			Self::DivDown(a, b) => self.describe_binary_expr('/', a.as_ref(), b.as_ref(), None),
-			Self::DivUp(a, b) => self.describe_binary_expr('\\', a.as_ref(), b.as_ref(), None),
+			Self::Add(a, b) => self.describe_binary_term('+', a.as_ref(), b.as_ref(), None),
+			Self::Sub(a, b) => self.describe_binary_term('-', a.as_ref(), b.as_ref(), None),
+			Self::Mul(a, b) => self.describe_binary_term('*', a.as_ref(), b.as_ref(), None),
+			Self::DivDown(a, b) => self.describe_binary_term('/', a.as_ref(), b.as_ref(), None),
+			Self::DivUp(a, b) => self.describe_binary_term('\\', a.as_ref(), b.as_ref(), None),
 		}
 	}
 }
@@ -116,7 +116,7 @@ impl std::fmt::Display for Term {
 	}
 }
 
-/// Individual evaluated terms from dice expressions
+/// Individual evaluated terms from expressions
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EvaledTerm<'a> {
 	// Values
@@ -175,11 +175,11 @@ impl Describe for EvaledTerm<'_> {
 				_ => format!("-({})", x.describe(max_rolls)),
 			},
 
-			Self::Add(a, b) => self.describe_binary_expr('+', a.as_ref(), b.as_ref(), max_rolls),
-			Self::Sub(a, b) => self.describe_binary_expr('-', a.as_ref(), b.as_ref(), max_rolls),
-			Self::Mul(a, b) => self.describe_binary_expr('*', a.as_ref(), b.as_ref(), max_rolls),
-			Self::DivDown(a, b) => self.describe_binary_expr('/', a.as_ref(), b.as_ref(), max_rolls),
-			Self::DivUp(a, b) => self.describe_binary_expr('\\', a.as_ref(), b.as_ref(), max_rolls),
+			Self::Add(a, b) => self.describe_binary_term('+', a.as_ref(), b.as_ref(), max_rolls),
+			Self::Sub(a, b) => self.describe_binary_term('-', a.as_ref(), b.as_ref(), max_rolls),
+			Self::Mul(a, b) => self.describe_binary_term('*', a.as_ref(), b.as_ref(), max_rolls),
+			Self::DivDown(a, b) => self.describe_binary_term('/', a.as_ref(), b.as_ref(), max_rolls),
+			Self::DivUp(a, b) => self.describe_binary_term('\\', a.as_ref(), b.as_ref(), max_rolls),
 		}
 	}
 }
@@ -243,13 +243,13 @@ pub trait Describe {
 
 /// Trait for describing binary expressions with influence from own type.
 /// Used for, e.g. wrapping parentheses around parts of expressions based on [TermType] of self and the expression.
-trait DescribeBinaryExpr: HasTermType + Describe {
+trait DescribeBinaryTerm: HasTermType + Describe {
 	/// Builds a detailed description for a binary expression with parentheses around parts of it if appropriate
-	fn describe_binary_expr(
+	fn describe_binary_term(
 		&self,
 		op: char,
-		a: &impl DescribeBinaryExpr,
-		b: &impl DescribeBinaryExpr,
+		a: &impl DescribeBinaryTerm,
+		b: &impl DescribeBinaryTerm,
 		max_rolls: Option<usize>,
 	) -> String {
 		format!(
