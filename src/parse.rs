@@ -6,7 +6,7 @@ use chumsky::prelude::*;
 
 use crate::{
 	dice::{Condition, Dice, Modifier},
-	expr::Term,
+	term::Term,
 };
 
 /// Generates a parser that specifically handles dice terms like "d20", "2d20kh", "8d6x", etc.

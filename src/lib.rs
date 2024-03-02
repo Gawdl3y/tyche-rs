@@ -1,5 +1,5 @@
 pub mod dice;
-pub mod expr;
+pub mod term;
 
 #[cfg(feature = "parse")]
 pub mod parse;

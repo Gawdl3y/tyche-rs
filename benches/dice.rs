@@ -6,7 +6,7 @@ use test::Bencher;
 
 use dicey::{
 	dice::{Dice, Roll},
-	expr::Describe,
+	term::Describe,
 };
 
 #[bench]

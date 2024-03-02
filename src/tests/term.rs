@@ -1,6 +1,6 @@
 use crate::{
 	dice::Dice,
-	expr::{Error, EvaledTerm, Term},
+	term::{Error, EvaledTerm, Term},
 };
 
 #[test]

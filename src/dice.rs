@@ -2,7 +2,7 @@ use std::{cmp, fmt, num::NonZeroU8};
 
 use fastrand::Rng;
 
-use crate::expr::Describe;
+use crate::term::Describe;
 
 /// Representation of a set of dice that can be rolled
 #[derive(Debug, Clone, PartialEq, Eq)]

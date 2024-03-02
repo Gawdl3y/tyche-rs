@@ -1,6 +1,6 @@
 use chumsky::Parser;
 
-use crate::{dice::Dice, expr::Term, parse::expr};
+use crate::{dice::Dice, parse::expr, term::Term};
 
 #[test]
 fn basic_negation() {

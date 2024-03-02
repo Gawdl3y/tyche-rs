@@ -40,7 +40,7 @@ fn main() {
 						evaled
 							.calc()
 							.map(|total| total.to_string())
-							.or_else(|err| Ok::<_, dicey::expr::Error>(err.to_string()))
+							.or_else(|err| Ok::<_, dicey::term::Error>(err.to_string()))
 							.unwrap()
 					);
 				}
