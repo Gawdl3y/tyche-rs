@@ -86,14 +86,26 @@ fn dice_inequality() {
 	assert_ne!(da, db);
 
 	let da = Dice::new(4, 8);
-	let db = Dice::new_exploding(4, 8);
+	let db = Dice::builder()
+		.count(4)
+		.sides(NonZeroU8::new(8).unwrap())
+		.explode(None, true)
+		.build();
 	assert_ne!(da, db);
 }
 
 #[test]
 fn roll_equality() {
-	let da = Dice::new_exploding(4, 8);
-	let db = Dice::new_exploding(4, 8);
+	let da = Dice::builder()
+		.count(4)
+		.sides(NonZeroU8::new(8).unwrap())
+		.explode(None, true)
+		.build();
+	let db = Dice::builder()
+		.count(4)
+		.sides(NonZeroU8::new(8).unwrap())
+		.explode(None, true)
+		.build();
 	let ra = Rolled {
 		rolls: vec![
 			DieRoll::new(4),
@@ -133,8 +145,16 @@ fn roll_equality() {
 
 #[test]
 fn roll_inequality() {
-	let da = Dice::new_exploding(4, 8);
-	let db = Dice::new_exploding(4, 8);
+	let da = Dice::builder()
+		.count(4)
+		.sides(NonZeroU8::new(8).unwrap())
+		.explode(None, true)
+		.build();
+	let db = Dice::builder()
+		.count(4)
+		.sides(NonZeroU8::new(8).unwrap())
+		.explode(None, true)
+		.build();
 	let ra = Rolled {
 		rolls: vec![
 			DieRoll::new(4),
@@ -171,7 +191,11 @@ fn roll_inequality() {
 	};
 	assert_ne!(ra, rb);
 
-	let da = Dice::new_exploding(4, 8);
+	let da = Dice::builder()
+		.count(4)
+		.sides(NonZeroU8::new(8).unwrap())
+		.explode(None, true)
+		.build();
 	let db = Dice::new(4, 8);
 	let ra = Rolled {
 		rolls: vec![
@@ -206,7 +230,11 @@ fn construct_plain(count: u8, sides: u8) -> Dice {
 }
 
 fn construct_exploding(count: u8, sides: u8) -> Dice {
-	let dice = Dice::new_exploding(count, sides);
+	let dice = Dice::builder()
+		.count(count)
+		.sides(NonZeroU8::new(sides).expect("sides must be nonzero"))
+		.explode(None, true)
+		.build();
 	assert_eq!(dice.count, count);
 	assert_eq!(dice.sides, NonZeroU8::new(sides).unwrap());
 	assert_eq!(dice.modifiers.len(), 1);
