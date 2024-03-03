@@ -1,4 +1,4 @@
-use std::{cmp, fmt, num::NonZeroU8};
+use std::{cmp, fmt};
 
 use fastrand::Rng;
 
@@ -11,7 +11,7 @@ pub struct Dice {
 	pub count: u8,
 
 	/// Number of sides for each die
-	pub sides: NonZeroU8,
+	pub sides: u8,
 
 	/// Modifiers to apply to rolls from this set of dice
 	pub modifiers: Vec<Modifier>,
@@ -42,19 +42,19 @@ impl Dice {
 
 	/// Rolls a single die of this type with no modifiers using the default Rng
 	pub fn roll_single(&self) -> DieRoll {
-		DieRoll::new_rand(self.sides.get())
+		DieRoll::new_rand(self.sides)
 	}
 
 	/// Rolls a single die of this type with no modifiers using the given Rng
 	pub fn roll_single_with_rng(&self, rng: &mut Rng) -> DieRoll {
-		DieRoll::new_rand_with_rng(self.sides.get(), rng)
+		DieRoll::new_rand_with_rng(self.sides, rng)
 	}
 
-	/// Creates a new set of dice with a given count and number of sides. Panics if the number of sides given is 0.
+	/// Creates a new set of dice with a given count and number of sides
 	pub fn new(count: u8, sides: u8) -> Self {
 		Self {
 			count,
-			sides: NonZeroU8::new(sides).expect("dice sides must be nonzero"),
+			sides,
 			modifiers: Vec::new(),
 		}
 	}
@@ -96,10 +96,10 @@ pub enum Modifier {
 	Explode(Option<Condition>, bool),
 
 	/// Keep the highest x dice, dropping the rest
-	KeepHigh(NonZeroU8),
+	KeepHigh(u8),
 
 	/// Keep the lowest x dice, dropping the rest
-	KeepLow(NonZeroU8),
+	KeepLow(u8),
 }
 
 impl Modifier {
@@ -117,7 +117,7 @@ impl Modifier {
 		match self {
 			Self::Explode(cond, recurse) => {
 				// Don't allow recursively exploding dice with 1 side since that would result in infinite explosions
-				if *recurse && rolled.dice.sides.get() == 1 {
+				if *recurse && rolled.dice.sides == 1 {
 					return Err(Error::InfiniteExplosion(rolled.dice.clone()));
 				}
 
@@ -166,7 +166,7 @@ impl Modifier {
 				refs.sort();
 				refs.reverse();
 				refs.iter_mut()
-					.skip(count.get() as usize)
+					.skip(*count as usize)
 					.for_each(|roll| roll.dropped_by = Some(self));
 			}
 
@@ -174,7 +174,7 @@ impl Modifier {
 				let mut refs = rolled.rolls.iter_mut().filter(|r| !r.is_dropped()).collect::<Vec<_>>();
 				refs.sort();
 				refs.iter_mut()
-					.skip(count.get() as usize)
+					.skip(*count as usize)
 					.for_each(|roll| roll.dropped_by = Some(self));
 			}
 		};
@@ -190,22 +190,8 @@ impl fmt::Display for Modifier {
 			"{}{}",
 			match self {
 				Self::Explode(_, recurse) => format!("x{}", recurse.then_some("").unwrap_or("o")),
-				Self::KeepHigh(count) => format!(
-					"kh{}",
-					if count.get() > 1 {
-						count.to_string()
-					} else {
-						"".to_owned()
-					}
-				),
-				Self::KeepLow(count) => format!(
-					"kl{}",
-					if count.get() > 1 {
-						count.to_string()
-					} else {
-						"".to_owned()
-					}
-				),
+				Self::KeepHigh(count) => format!("kh{}", if *count > 1 { count.to_string() } else { "".to_owned() }),
+				Self::KeepLow(count) => format!("kl{}", if *count > 1 { count.to_string() } else { "".to_owned() }),
 			},
 			match self {
 				Self::Explode(Some(cond), _) => cond.to_string(),
@@ -218,16 +204,16 @@ impl fmt::Display for Modifier {
 /// Conditions that die values can be tested against
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Condition {
-	Eq(NonZeroU8),
-	Gt(NonZeroU8),
-	Gte(NonZeroU8),
-	Lt(NonZeroU8),
-	Lte(NonZeroU8),
+	Eq(u8),
+	Gt(u8),
+	Gte(u8),
+	Lt(u8),
+	Lte(u8),
 }
 
 impl Condition {
 	/// Creates a Condition from its corresponding symbol and a value
-	pub fn from_symbol_and_val(symbol: &str, val: NonZeroU8) -> Result<Self, Error> {
+	pub fn from_symbol_and_val(symbol: &str, val: u8) -> Result<Self, Error> {
 		Ok(match symbol {
 			"=" => Self::Eq(val),
 			">" => Self::Gt(val),
@@ -239,7 +225,7 @@ impl Condition {
 	}
 
 	/// Checks a value against the condition
-	pub fn check(&self, val: NonZeroU8) -> bool {
+	pub fn check(&self, val: u8) -> bool {
 		match self {
 			Self::Eq(expected) => val == *expected,
 			Self::Gt(expected) => val > *expected,
@@ -282,7 +268,7 @@ impl fmt::Display for Condition {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DieRoll<'a> {
 	/// Value that was rolled
-	pub val: NonZeroU8,
+	pub val: u8,
 
 	/// Modifier that caused the addition of this die
 	pub added_by: Option<&'a Modifier>,
@@ -305,7 +291,7 @@ impl DieRoll<'_> {
 	/// Creates a new DieRoll with the given value
 	pub fn new(val: u8) -> Self {
 		Self {
-			val: NonZeroU8::new(val).expect("roll val must be nonzero"),
+			val,
 			added_by: None,
 			dropped_by: None,
 		}
@@ -319,7 +305,7 @@ impl DieRoll<'_> {
 
 	/// Creates a new DieRoll with a random value using the given Rng
 	pub fn new_rand_with_rng(max: u8, rng: &mut Rng) -> Self {
-		Self::new(rng.u8(1..=max))
+		Self::new(if max > 0 { rng.u8(1..=max) } else { 0 })
 	}
 }
 
@@ -358,7 +344,7 @@ impl Rolled<'_> {
 
 		// Sum all rolls that haven't been dropped
 		for r in self.rolls.iter().filter(|r| !r.is_dropped()) {
-			sum = sum.checked_add(r.val.get().into()).ok_or(Error::Overflow)?;
+			sum = sum.checked_add(r.val as u16).ok_or(Error::Overflow)?;
 		}
 
 		Ok(sum)
@@ -424,7 +410,7 @@ impl Builder {
 	}
 
 	/// Sets the number of sides per die
-	pub fn sides(mut self, sides: NonZeroU8) -> Self {
+	pub fn sides(mut self, sides: u8) -> Self {
 		self.0.sides = sides;
 		self
 	}
@@ -436,13 +422,13 @@ impl Builder {
 	}
 
 	/// Adds the keep highest modifier to the dice
-	pub fn keep_high(mut self, count: NonZeroU8) -> Self {
+	pub fn keep_high(mut self, count: u8) -> Self {
 		self.0.modifiers.push(Modifier::KeepHigh(count));
 		self
 	}
 
 	/// Adds the keep lowest modifier to the dice
-	pub fn keep_low(mut self, count: NonZeroU8) -> Self {
+	pub fn keep_low(mut self, count: u8) -> Self {
 		self.0.modifiers.push(Modifier::KeepLow(count));
 		self
 	}

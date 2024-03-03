@@ -2,8 +2,6 @@
 
 extern crate test;
 
-use std::num::NonZeroU8;
-
 use test::Bencher;
 
 use dicey::{
@@ -19,11 +17,7 @@ fn roll_4d8(b: &mut Bencher) {
 
 #[bench]
 fn roll_8d6x(b: &mut Bencher) {
-	let dice = Dice::builder()
-		.count(8)
-		.sides(NonZeroU8::new(6).unwrap())
-		.explode(None, true)
-		.build();
+	let dice = Dice::builder().count(8).sides(6).explode(None, true).build();
 	b.iter(|| dice.roll().unwrap());
 }
 
@@ -41,11 +35,7 @@ fn roll_and_total_4d8(b: &mut Bencher) {
 
 #[bench]
 fn roll_and_total_8d6x(b: &mut Bencher) {
-	let dice = Dice::builder()
-		.count(8)
-		.sides(NonZeroU8::new(6).unwrap())
-		.explode(None, true)
-		.build();
+	let dice = Dice::builder().count(8).sides(6).explode(None, true).build();
 	b.iter(|| dice.roll().unwrap().total().unwrap());
 }
 
@@ -67,11 +57,7 @@ fn explain_4d8_result(b: &mut Bencher) {
 
 #[bench]
 fn explain_8d6x_result(b: &mut Bencher) {
-	let dice = Dice::builder()
-		.count(8)
-		.sides(NonZeroU8::new(6).unwrap())
-		.explode(None, true)
-		.build();
+	let dice = Dice::builder().count(8).sides(6).explode(None, true).build();
 	let modifier = dice.modifiers.first();
 	let roll = Rolled {
 		rolls: vec![

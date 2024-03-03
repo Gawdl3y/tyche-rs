@@ -76,7 +76,7 @@ impl Term {
 	pub fn is_deterministic(&self) -> bool {
 		match self {
 			Self::Num(..) => true,
-			Self::Dice(dice) => dice.sides.get() == 1,
+			Self::Dice(dice) => dice.sides == 1,
 			Self::Neg(x) => x.is_deterministic(),
 			Self::Add(a, b) | Self::Sub(a, b) | Self::Mul(a, b) | Self::DivDown(a, b) | Self::DivUp(a, b) => {
 				a.is_deterministic() && b.is_deterministic()
