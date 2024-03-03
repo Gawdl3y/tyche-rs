@@ -1,6 +1,12 @@
 use chumsky::Parser;
 
-use crate::{dice::Dice, parse::term as term_parser, term::Term};
+use std::num::NonZeroU8;
+
+use crate::{
+	dice::{Condition, Dice},
+	parse::{dice as dice_parser, term as term_parser},
+	term::Term,
+};
 
 #[test]
 fn basic_negation() {
@@ -65,6 +71,83 @@ fn basic_dice_math() {
 	let dice = Dice::new(4, 6);
 	let expected = Term::Add(Box::new(Term::Dice(dice)), Box::new(Term::Num(8)));
 	let ast = term_parser().parse("4d6 + 8").unwrap();
+	assert_eq!(ast, expected);
+}
+
+#[test]
+fn dice_explode() {
+	let expected = Dice::builder()
+		.count(4)
+		.sides(NonZeroU8::new(6).unwrap())
+		.explode(None, true)
+		.build();
+	let ast = dice_parser().parse("4d6x").unwrap();
+	assert_eq!(ast, expected);
+}
+
+#[test]
+fn dice_explode_once() {
+	let expected = Dice::builder()
+		.count(4)
+		.sides(NonZeroU8::new(6).unwrap())
+		.explode(None, false)
+		.build();
+	let ast = dice_parser().parse("4d6xo").unwrap();
+	assert_eq!(ast, expected);
+}
+
+#[test]
+fn dice_explode_condition() {
+	let expected = Dice::builder()
+		.count(4)
+		.sides(NonZeroU8::new(6).unwrap())
+		.explode(Some(Condition::Gte(NonZeroU8::new(5).unwrap())), true)
+		.build();
+	let ast = dice_parser().parse("4d6x>=5").unwrap();
+	assert_eq!(ast, expected);
+}
+
+#[test]
+fn dice_keep_high() {
+	let expected = Dice::builder()
+		.count(4)
+		.sides(NonZeroU8::new(20).unwrap())
+		.keep_high(NonZeroU8::new(1).unwrap())
+		.build();
+	let ast = dice_parser().parse("4d20kh").unwrap();
+	assert_eq!(ast, expected);
+}
+
+#[test]
+fn dice_keep_high_2() {
+	let expected = Dice::builder()
+		.count(4)
+		.sides(NonZeroU8::new(20).unwrap())
+		.keep_high(NonZeroU8::new(2).unwrap())
+		.build();
+	let ast = dice_parser().parse("4d20kh2").unwrap();
+	assert_eq!(ast, expected);
+}
+
+#[test]
+fn dice_keep_low() {
+	let expected = Dice::builder()
+		.count(4)
+		.sides(NonZeroU8::new(20).unwrap())
+		.keep_low(NonZeroU8::new(1).unwrap())
+		.build();
+	let ast = dice_parser().parse("4d20kl").unwrap();
+	assert_eq!(ast, expected);
+}
+
+#[test]
+fn dice_keep_low_2() {
+	let expected = Dice::builder()
+		.count(4)
+		.sides(NonZeroU8::new(20).unwrap())
+		.keep_low(NonZeroU8::new(2).unwrap())
+		.build();
+	let ast = dice_parser().parse("4d20kl2").unwrap();
 	assert_eq!(ast, expected);
 }
 
