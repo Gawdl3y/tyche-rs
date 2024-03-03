@@ -173,9 +173,11 @@ impl std::str::FromStr for Dice {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		dice().parse(s).into_result().map_err(|errs| Error {
+		let lc = s.to_lowercase();
+		let result = dice().parse(&lc).into_result().map_err(|errs| Error {
 			details: errs.iter().map(|err| err.to_string()).collect::<Vec<_>>().join("; "),
-		})
+		});
+		result
 	}
 }
 
@@ -183,8 +185,10 @@ impl std::str::FromStr for Term {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		term().parse(s).into_result().map_err(|errs| Error {
+		let lc = s.to_lowercase();
+		let result = term().parse(&lc).into_result().map_err(|errs| Error {
 			details: errs.iter().map(|err| err.to_string()).collect::<Vec<_>>().join("; "),
-		})
+		});
+		result
 	}
 }
