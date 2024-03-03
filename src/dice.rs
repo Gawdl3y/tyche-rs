@@ -90,7 +90,11 @@ impl fmt::Display for Dice {
 /// A modifier that can be applied to a set of [Dice] to manipulate resulting [Rolls] from them
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Modifier {
-	/// Exploding dice - automatically rolls additional dice for any that meet a given condition
+	/// Reroll dice that meet a condition. If the second parameter is `true`, the reroll is done recursively until the
+	/// rerolled die no longer meets the condition.
+	Reroll(Condition, bool),
+
+	/// Exploding dice - automatically roll additional dice for any that meet a given condition
 	/// (default being equal to the number of sides for the dice).
 	/// If the second parameter is `true`, this is done recursively for any additional rolls that also meet the condition.
 	Explode(Option<Condition>, bool),
@@ -100,6 +104,27 @@ pub enum Modifier {
 
 	/// Keep the lowest x dice, dropping the rest
 	KeepLow(u8),
+	// /// Replace all dice lower than a given minimum value with the minimum
+	// Min(u8),
+
+	// /// Replace all dice higher than a given maximum value with the maximum
+	// Max(u8),
+
+	// /// Count the number of dice that meet or don't meet (second parameter `true` for meets, `false` for does not meet)
+	// /// the given condition.
+	// CountCond(Condition, bool),
+
+	// /// Count the number of dice that are even (`true`) or odd (`false`)
+	// CountParity(bool),
+
+	// /// Subtract the number of dice that meet the given condition
+	// SubCond(Condition),
+
+	// /// Subtract the values of dice that meet the given condition
+	// SubCondVal(Condition),
+
+	// /// Subtract a value from the total
+	// Margin(u8),
 }
 
 impl Modifier {
@@ -115,10 +140,47 @@ impl Modifier {
 		rng: &mut Rng,
 	) -> Result<(), Error> {
 		match self {
+			Self::Reroll(cond, recurse) => {
+				// Don't allow recursively rerolling dice with 1 or 0 sides since that would result in infinite rerolls
+				if *recurse && rolled.dice.sides <= 1 {
+					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				}
+
+				loop {
+					// Determine which rolls qualify for reroll
+					let mut to_reroll = rolled
+						.rolls
+						.iter_mut()
+						.filter(|r| !r.is_dropped())
+						.filter(|r| cond.check(r.val))
+						.collect::<Vec<_>>();
+
+					if to_reroll.is_empty() {
+						break;
+					}
+
+					// Roll additional dice and drop the originals
+					let mut rerolls = Vec::with_capacity(to_reroll.len());
+					for roll in to_reroll.iter_mut() {
+						let mut reroll = rolled.dice.roll_single_with_rng(rng);
+						reroll.added_by = Some(self);
+						rerolls.push(reroll);
+						roll.dropped_by = Some(self);
+					}
+
+					// Add the rerolls to the rolls
+					rolled.rolls.append(&mut rerolls);
+
+					if !*recurse {
+						break;
+					}
+				}
+			}
+
 			Self::Explode(cond, recurse) => {
-				// Don't allow recursively exploding dice with 1 side since that would result in infinite explosions
-				if *recurse && rolled.dice.sides == 1 {
-					return Err(Error::InfiniteExplosion(rolled.dice.clone()));
+				// Don't allow recursively exploding dice with 1 or 0 sides since that would result in infinite explosions
+				if *recurse && rolled.dice.sides <= 1 {
+					return Err(Error::InfiniteRolls(rolled.dice.clone()));
 				}
 
 				// Determine how many initial rolls qualify for explosion
@@ -189,12 +251,13 @@ impl fmt::Display for Modifier {
 			f,
 			"{}{}",
 			match self {
+				Self::Reroll(_, recurse) => format!("r{}", recurse.then_some("r").unwrap_or("")),
 				Self::Explode(_, recurse) => format!("x{}", recurse.then_some("").unwrap_or("o")),
 				Self::KeepHigh(count) => format!("kh{}", if *count > 1 { count.to_string() } else { "".to_owned() }),
 				Self::KeepLow(count) => format!("kl{}", if *count > 1 { count.to_string() } else { "".to_owned() }),
 			},
 			match self {
-				Self::Explode(Some(cond), _) => cond.to_string(),
+				Self::Reroll(cond, _) | Self::Explode(Some(cond), _) => cond.to_string(),
 				Self::Explode(None, _) | Self::KeepHigh(..) | Self::KeepLow(..) => "".to_owned(),
 			}
 		)
@@ -392,7 +455,7 @@ pub enum Error {
 	Overflow,
 
 	#[error("{0} would result in infinite explosions")]
-	InfiniteExplosion(Dice),
+	InfiniteRolls(Dice),
 
 	#[error("unknown condition symbol: {0}")]
 	UnknownCondition(String),

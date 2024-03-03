@@ -36,12 +36,18 @@ pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'
 		.then(text::int(10))
 		.then(
 			choice((
+				// Reroll dice (e.g. r1, rr1, r<=2)
+				just('r')
+					.ignored()
+					.then(just('r').ignored().or_not().map(|r| r.is_some()))
+					.then(condition)
+					.map(|((_, recurse), cond)| Modifier::Reroll(cond, recurse)),
 				// Exploding dice (e.g. x, xo, x>4)
 				just('x')
 					.ignored()
 					.then(just('o').ignored().or_not().map(|o| o.is_none()))
 					.then(condition.or_not())
-					.map(|((_, once), cond)| Modifier::Explode(cond, once)),
+					.map(|((_, recurse), cond)| Modifier::Explode(cond, recurse)),
 				// Keep lowest (e.g. kl, kl2)
 				just("kl")
 					.ignored()
