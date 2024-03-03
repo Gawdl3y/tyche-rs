@@ -13,11 +13,11 @@ use crate::{
 pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Clone {
 	// Parser for dice modifier conditions
 	let condition = choice((
-		just('=').to(Condition::Eq as fn(NonZeroU8) -> _),
-		just('>').to(Condition::Gt as fn(NonZeroU8) -> _),
 		just(">=").to(Condition::Gte as fn(NonZeroU8) -> _),
+		just("<=").to(Condition::Lte as fn(NonZeroU8) -> _),
+		just('>').to(Condition::Gt as fn(NonZeroU8) -> _),
 		just('<').to(Condition::Lt as fn(NonZeroU8) -> _),
-		just(">=").to(Condition::Lte as fn(NonZeroU8) -> _),
+		just('=').to(Condition::Eq as fn(NonZeroU8) -> _),
 	))
 	.or_not()
 	.then(text::int::<&'src str, _, _>(10))
