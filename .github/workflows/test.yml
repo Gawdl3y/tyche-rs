@@ -1,0 +1,65 @@
+name: Test
+on:
+  push:
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  clippy:
+    name: Lint project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Cargo dependency cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: shared
+          save-if: false
+
+      - name: Run Clippy
+        run: cargo clippy
+        env:
+          RUSTFLAGS: -Dwarnings
+
+  tests:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Cargo dependency cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: shared
+          save-if: false
+
+      - name: Run tests
+        run: cargo test --verbose
+
+  build:
+    name: Build project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Cargo dependency cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: shared
+          save-if: false
+
+      - name: Build project
+        run: cargo build --verbose
