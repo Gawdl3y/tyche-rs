@@ -6,7 +6,7 @@ env:
 
 jobs:
   clippy:
-    name: Lint project
+    name: Clippy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -27,7 +27,7 @@ jobs:
           RUSTFLAGS: -Dwarnings
 
   tests:
-    name: Run tests
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -46,7 +46,7 @@ jobs:
         run: cargo test --verbose
 
   build:
-    name: Build project
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
