@@ -10,7 +10,7 @@ use crate::{
 };
 
 /// Generates a parser that specifically handles dice terms like "d20", "2d20kh", "8d6x", etc.
-pub fn dice<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Clone {
+pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Clone {
 	// Parser for dice modifier conditions
 	let condition = choice((
 		just('=').to(Condition::Eq as fn(NonZeroU8) -> _),
@@ -88,9 +88,15 @@ pub fn dice<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, 
 		})
 }
 
+/// Generates a parser that specifically handles dice terms like "d20", "2d20kh", "8d6x", etc.
+/// and expects end of input
+pub fn dice<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Clone {
+	dice_part().then_ignore(end())
+}
+
 /// Generates a parser that handles full expressions including mathematical operations, grouping with parentheses,
 /// dice expressions, etc.
-pub fn term<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, char>>> {
+pub fn term_part<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, char>>> {
 	// Helper function for operators
 	let op = |c| just(c).padded();
 
@@ -103,7 +109,7 @@ pub fn term<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, 
 		});
 
 		// Parser for dice expressions
-		let dice = dice().map(Term::Dice);
+		let dice = dice_part().map(Term::Dice);
 
 		// Parser for expressions enclosed in parentheses
 		let atom = dice.or(int).or(term.delimited_by(just('('), just(')'))).padded();
@@ -134,7 +140,12 @@ pub fn term<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, 
 			|lhs, (op, rhs)| op(Box::new(lhs), Box::new(rhs)),
 		)
 	})
-	.then_ignore(end())
+}
+
+/// Generates a parser that handles full expressions including mathematical operations, grouping with parentheses,
+/// dice expressions, etc. and expects end of input
+pub fn term<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, char>>> {
+	term_part().then_ignore(end())
 }
 
 #[derive(Debug, Clone)]
