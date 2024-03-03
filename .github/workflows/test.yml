@@ -19,7 +19,6 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: shared
-          save-if: false
 
       - name: Run Clippy
         run: cargo clippy
@@ -40,7 +39,6 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: shared
-          save-if: false
 
       - name: Run tests
         run: cargo test --verbose
@@ -59,7 +57,6 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: shared
-          save-if: false
 
       - name: Build project
         run: cargo build --verbose
