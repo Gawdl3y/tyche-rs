@@ -100,7 +100,7 @@ pub fn dice<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, 
 
 /// Generates a parser that handles full expressions including mathematical operations, grouping with parentheses,
 /// dice expressions, etc.
-pub fn term_part<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, char>>> {
+pub fn term_part<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, char>>> + Clone {
 	// Helper function for operators
 	let op = |c| just(c).padded();
 
@@ -148,7 +148,7 @@ pub fn term_part<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'
 
 /// Generates a parser that handles full expressions including mathematical operations, grouping with parentheses,
 /// dice expressions, etc. and expects end of input
-pub fn term<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, char>>> {
+pub fn term<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, char>>> + Clone {
 	term_part().then_ignore(end())
 }
 
