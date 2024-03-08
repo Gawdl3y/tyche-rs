@@ -15,7 +15,7 @@ fn main() {
 
 		// If there isn't already input available in stdin, display a prompt for it
 		if lines.size_hint().1.is_none() {
-			print!("Enter dice expression: ");
+			print!("\x1b[1m\x1b[36mEnter dice expression:\x1b[0m ");
 			io::stdout().flush().unwrap();
 		}
 
@@ -23,20 +23,19 @@ fn main() {
 		lines.next().unwrap().unwrap()
 	};
 
-	println!("Input: {}", input);
+	println!("\x1b[1m\x1b[36mInput:\x1b[0m {}", input);
 
 	match dicey::parse::term().parse(&input).into_result() {
 		Ok(ast) => {
-			println!("Parsed: {:?}", ast);
-			println!("Deterministic: {}", ast.is_deterministic());
+			println!("\x1b[1m\x1b[36mParsed:\x1b[0m {:#?}", ast);
+			println!("\x1b[1m\x1b[36mDeterministic:\x1b[0m {}", ast.is_deterministic());
 
 			match ast.eval() {
 				Ok(evaled) => {
-					println!();
-					println!("Evaluated: {:?}", evaled);
-					println!("Described: {}", evaled);
+					println!("\x1b[1m\x1b[36mEvaluated:\x1b[0m {:#?}", evaled);
+					println!("\x1b[1m\x1b[36mDescribed:\x1b[0m {}", evaled);
 					println!(
-						"Total: {}",
+						"\x1b[1m\x1b[36mTotal:\x1b[0m {}",
 						evaled
 							.calc()
 							.map(|total| total.to_string())
@@ -44,10 +43,12 @@ fn main() {
 							.unwrap()
 					);
 				}
-				Err(eval_err) => eprintln!("Evaluation error: {}", eval_err),
+				Err(eval_err) => eprintln!("\x1b[1m\x1b[31mEvaluation error:\x1b[0m {}", eval_err),
 			}
 		}
-		Err(parse_errs) => parse_errs.into_iter().for_each(|e| eprintln!("Parse error: {}", e)),
+		Err(parse_errs) => parse_errs
+			.into_iter()
+			.for_each(|e| eprintln!("\x1b[1m\x1b[31mParse error:\x1b[0m {}", e)),
 	};
 }
 
