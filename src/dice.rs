@@ -20,21 +20,21 @@ pub struct Dice {
 impl Dice {
 	/// Rolls the dice using the default Rng
 	pub fn roll(&self) -> Result<Rolled, Error> {
-		self.roll_with_rng(&mut Rng::new())
+		self.roll_using_rng(&mut Rng::new())
 	}
 
 	/// Rolls the dice with the given Rng
-	pub fn roll_with_rng(&self, rng: &mut Rng) -> Result<Rolled, Error> {
+	pub fn roll_using_rng(&self, rng: &mut Rng) -> Result<Rolled, Error> {
 		// Roll the dice!
 		let mut rolls = Vec::with_capacity(self.count as usize);
 		for _ in 0..self.count {
-			rolls.push(self.roll_single_with_rng(rng));
+			rolls.push(self.roll_single_using_rng(rng));
 		}
 
 		// Apply all modifiers
 		let mut rolls = Rolled { rolls, dice: self };
 		for modifier in self.modifiers.iter() {
-			modifier.apply_with_rng(&mut rolls, rng)?;
+			modifier.apply_using_rng(&mut rolls, rng)?;
 		}
 
 		Ok(rolls)
@@ -46,8 +46,8 @@ impl Dice {
 	}
 
 	/// Rolls a single die of this type with no modifiers using the given Rng
-	pub fn roll_single_with_rng(&self, rng: &mut Rng) -> DieRoll {
-		DieRoll::new_rand_with_rng(self.sides, rng)
+	pub fn roll_single_using_rng(&self, rng: &mut Rng) -> DieRoll {
+		DieRoll::new_rand_using_rng(self.sides, rng)
 	}
 
 	/// Creates a new set of dice with a given count and number of sides
@@ -130,11 +130,11 @@ pub enum Modifier {
 impl Modifier {
 	/// Applies the modifier to a set of rolls using the default Rng where needed
 	pub fn apply<'rolled, 'modifier: 'rolled>(&'modifier self, rolls: &mut Rolled<'rolled>) -> Result<(), Error> {
-		self.apply_with_rng(rolls, &mut Rng::new())
+		self.apply_using_rng(rolls, &mut Rng::new())
 	}
 
 	/// Applies the modifier to a set of rolls using a given Rng where needed
-	pub fn apply_with_rng<'rolled, 'modifier: 'rolled>(
+	pub fn apply_using_rng<'rolled, 'modifier: 'rolled>(
 		&'modifier self,
 		rolled: &mut Rolled<'rolled>,
 		rng: &mut Rng,
@@ -162,7 +162,7 @@ impl Modifier {
 					// Roll additional dice and drop the originals
 					let mut rerolls = Vec::with_capacity(to_reroll.len());
 					for roll in to_reroll.iter_mut() {
-						let mut reroll = rolled.dice.roll_single_with_rng(rng);
+						let mut reroll = rolled.dice.roll_single_using_rng(rng);
 						reroll.added_by = Some(self);
 						rerolls.push(reroll);
 						roll.dropped_by = Some(self);
@@ -198,7 +198,7 @@ impl Modifier {
 					// Roll additional dice
 					let mut explosions = Vec::with_capacity(to_explode);
 					for _ in 0..to_explode {
-						let mut roll = rolled.dice.roll_single_with_rng(rng);
+						let mut roll = rolled.dice.roll_single_using_rng(rng);
 						roll.added_by = Some(self);
 						explosions.push(roll);
 					}
@@ -363,11 +363,11 @@ impl DieRoll<'_> {
 	/// Creates a new DieRoll with a random value using the default Rng
 	pub fn new_rand(max: u8) -> Self {
 		let mut rng = Rng::new();
-		Self::new_rand_with_rng(rng.u8(1..=max), &mut rng)
+		Self::new_rand_using_rng(rng.u8(1..=max), &mut rng)
 	}
 
 	/// Creates a new DieRoll with a random value using the given Rng
-	pub fn new_rand_with_rng(max: u8, rng: &mut Rng) -> Self {
+	pub fn new_rand_using_rng(max: u8, rng: &mut Rng) -> Self {
 		Self::new(if max > 0 { rng.u8(1..=max) } else { 0 })
 	}
 }
