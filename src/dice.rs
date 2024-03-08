@@ -454,7 +454,7 @@ pub enum Error {
 	#[error("integer overflow")]
 	Overflow,
 
-	#[error("{0} would result in infinite explosions")]
+	#[error("{0} would result in infinite rolls")]
 	InfiniteRolls(Dice),
 
 	#[error("unknown condition symbol: {0}")]
