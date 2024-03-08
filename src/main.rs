@@ -25,7 +25,7 @@ fn main() {
 
 	println!("\x1b[1m\x1b[36mInput:\x1b[0m {}", input);
 
-	match dicey::parse::term().parse(&input).into_result() {
+	match dicey::parser().parse(&input).into_result() {
 		Ok(ast) => {
 			println!("\x1b[1m\x1b[36mParsed:\x1b[0m {:#?}", ast);
 			println!("\x1b[1m\x1b[36mDeterministic:\x1b[0m {}", ast.is_deterministic());
