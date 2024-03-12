@@ -87,23 +87,26 @@ impl fmt::Display for Dice {
 	}
 }
 
-/// A modifier that can be applied to a set of [Dice] to manipulate resulting [Rolls] from them
+/// A modifier that can be applied to a set of [Dice] to manipulate resulting [Rolled] dice sets from them
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Modifier {
-	/// Reroll dice that meet a condition. If the second parameter is `true`, the reroll is done recursively until the
-	/// rerolled die no longer meets the condition.
+	/// Rerolls (drops original and adds a newly-rolled die) dice that meet a condition.
+	/// If the second parameter is `true`, the reroll is done recursively until the rerolled die no longer meets the
+	/// condition.
 	Reroll(Condition, bool),
 
-	/// Exploding dice - automatically roll additional dice for any that meet a given condition
-	/// (default being equal to the number of sides for the dice).
-	/// If the second parameter is `true`, this is done recursively for any additional rolls that also meet the condition.
+	/// Explodes (keeps original and adds an additional newly-rolled die) dice that meet a condition.
+	/// The default condition is being equal to the number of sides for the dice.
+	/// If the second parameter is `true`, the explosion is done recursively for any additional rolls that also meet the
+	/// condition.
 	Explode(Option<Condition>, bool),
 
-	/// Keep the highest x dice, dropping the rest
+	/// Keeps only the highest x dice, dropping the rest
 	KeepHigh(u8),
 
-	/// Keep the lowest x dice, dropping the rest
+	/// Keeps only the lowest x dice, dropping the rest
 	KeepLow(u8),
+	//
 	// /// Replace all dice lower than a given minimum value with the minimum
 	// Min(u8),
 
