@@ -50,6 +50,15 @@ impl Dice {
 		DieRoll::new_rand_using_rng(self.sides, rng)
 	}
 
+	/// Gets a new set of Dice matching this one but without any modifiers
+	pub fn plain(&self) -> Self {
+		Dice {
+			count: self.count,
+			sides: self.sides,
+			modifiers: Vec::new(),
+		}
+	}
+
 	/// Creates a new set of dice with a given count and number of sides
 	pub fn new(count: u8, sides: u8) -> Self {
 		Self {
