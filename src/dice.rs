@@ -4,7 +4,7 @@ use fastrand::Rng;
 
 use crate::term::Describe;
 
-/// Representation of a set of dice that can be rolled
+/// A single set of rollable dice and a collection of modifiers to apply to any [Rolled] results produced by it.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Dice {
 	/// Number of dice to roll
@@ -52,11 +52,7 @@ impl Dice {
 
 	/// Gets a new set of Dice matching this one but without any modifiers
 	pub fn plain(&self) -> Self {
-		Dice {
-			count: self.count,
-			sides: self.sides,
-			modifiers: Vec::new(),
-		}
+		Self::new(self.count, self.sides)
 	}
 
 	/// Creates a new set of dice with a given count and number of sides
