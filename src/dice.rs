@@ -5,7 +5,7 @@ use fastrand::Rng;
 use crate::term::Describe;
 
 /// Representation of a set of dice that can be rolled
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Dice {
 	/// Number of dice to roll
 	pub count: u8,
@@ -88,7 +88,7 @@ impl fmt::Display for Dice {
 }
 
 /// A modifier that can be applied to a set of [Dice] to manipulate resulting [Rolls] from them
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Modifier {
 	/// Reroll dice that meet a condition. If the second parameter is `true`, the reroll is done recursively until the
 	/// rerolled die no longer meets the condition.
@@ -302,7 +302,7 @@ impl fmt::Display for Modifier {
 }
 
 /// Conditions that die values can be tested against
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Condition {
 	Eq(u8),
 	Gt(u8),
