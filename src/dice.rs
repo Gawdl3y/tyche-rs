@@ -141,9 +141,26 @@ impl Modifier {
 	) -> Result<(), Error> {
 		match self {
 			Self::Reroll(cond, recurse) => {
-				// Don't allow recursively rerolling dice with 1 or 0 sides since that would result in infinite rerolls
-				if *recurse && rolled.dice.sides <= 1 {
-					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				// Prevent recursively rerolling dice that would result in infinite rerolls
+				if *recurse {
+					match cond {
+						Condition::Eq(other) if *other == 1 && rolled.dice.sides == 1 => {
+							return Err(Error::InfiniteRolls(rolled.dice.clone()));
+						}
+						Condition::Gt(other) if *other == 0 => {
+							return Err(Error::InfiniteRolls(rolled.dice.clone()));
+						}
+						Condition::Gte(other) if *other <= 1 => {
+							return Err(Error::InfiniteRolls(rolled.dice.clone()));
+						}
+						Condition::Lt(other) if *other > rolled.dice.sides => {
+							return Err(Error::InfiniteRolls(rolled.dice.clone()));
+						}
+						Condition::Lte(other) if *other >= rolled.dice.sides => {
+							return Err(Error::InfiniteRolls(rolled.dice.clone()));
+						}
+						_ => {}
+					}
 				}
 
 				loop {
@@ -178,9 +195,29 @@ impl Modifier {
 			}
 
 			Self::Explode(cond, recurse) => {
-				// Don't allow recursively exploding dice with 1 or 0 sides since that would result in infinite explosions
-				if *recurse && rolled.dice.sides <= 1 {
-					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				// Prevent recursively exploding dice that would result in infinite explosions
+				if *recurse {
+					match cond {
+						Some(Condition::Eq(other)) if *other == 1 && rolled.dice.sides == 1 => {
+							return Err(Error::InfiniteRolls(rolled.dice.clone()));
+						}
+						Some(Condition::Gt(other)) if *other == 0 => {
+							return Err(Error::InfiniteRolls(rolled.dice.clone()));
+						}
+						Some(Condition::Gte(other)) if *other <= 1 => {
+							return Err(Error::InfiniteRolls(rolled.dice.clone()));
+						}
+						Some(Condition::Lt(other)) if *other > rolled.dice.sides => {
+							return Err(Error::InfiniteRolls(rolled.dice.clone()));
+						}
+						Some(Condition::Lte(other)) if *other >= rolled.dice.sides => {
+							return Err(Error::InfiniteRolls(rolled.dice.clone()));
+						}
+						None if rolled.dice.sides == 1 => {
+							return Err(Error::InfiniteRolls(rolled.dice.clone()));
+						}
+						_ => {}
+					}
 				}
 
 				// Determine how many initial rolls qualify for explosion
