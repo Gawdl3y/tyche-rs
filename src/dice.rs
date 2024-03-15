@@ -197,9 +197,9 @@ impl Modifier {
 					let mut rerolls = Vec::with_capacity(to_reroll.len());
 					for roll in to_reroll.iter_mut() {
 						let mut reroll = rolled.dice.roll_single_using_rng(rng);
-						reroll.added_by = Some(self);
+						reroll.add(self);
 						rerolls.push(reroll);
-						roll.dropped_by = Some(self);
+						roll.drop(self);
 					}
 
 					// Add the rerolls to the rolls
@@ -253,7 +253,7 @@ impl Modifier {
 					let mut explosions = Vec::with_capacity(to_explode);
 					for _ in 0..to_explode {
 						let mut roll = rolled.dice.roll_single_using_rng(rng);
-						roll.added_by = Some(self);
+						roll.add(self);
 						explosions.push(roll);
 					}
 
@@ -281,17 +281,13 @@ impl Modifier {
 				let mut refs = rolled.rolls.iter_mut().filter(|r| !r.is_dropped()).collect::<Vec<_>>();
 				refs.sort();
 				refs.reverse();
-				refs.iter_mut()
-					.skip(*count as usize)
-					.for_each(|roll| roll.dropped_by = Some(self));
+				refs.iter_mut().skip(*count as usize).for_each(|roll| roll.drop(self));
 			}
 
 			Self::KeepLow(count) => {
 				let mut refs = rolled.rolls.iter_mut().filter(|r| !r.is_dropped()).collect::<Vec<_>>();
 				refs.sort();
-				refs.iter_mut()
-					.skip(*count as usize)
-					.for_each(|roll| roll.dropped_by = Some(self));
+				refs.iter_mut().skip(*count as usize).for_each(|roll| roll.drop(self));
 			}
 		};
 
@@ -394,7 +390,19 @@ pub struct DieRoll<'a> {
 	pub dropped_by: Option<&'a Modifier>,
 }
 
-impl DieRoll<'_> {
+impl<'r> DieRoll<'r> {
+	/// Marks this die roll as added by a given modifier.
+	#[inline]
+	pub fn add<'m: 'r>(&mut self, from: &'m Modifier) {
+		self.added_by = Some(from);
+	}
+
+	/// Marks this die roll as dropped by a given modifier.
+	#[inline]
+	pub fn drop<'m: 'r>(&mut self, from: &'m Modifier) {
+		self.dropped_by = Some(from);
+	}
+
 	/// Indicates whether this die roll was part of the original set (not added by a modifier).
 	#[inline]
 	pub fn is_original(&self) -> bool {
