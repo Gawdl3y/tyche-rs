@@ -379,27 +379,27 @@ impl fmt::Display for Condition {
 
 /// A `DieRoll` is a single die resulting from rolling [Dice] and optionally applying modifiers.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DieRoll<'a> {
+pub struct DieRoll<'m> {
 	/// Value that was rolled
 	pub val: u8,
 
 	/// Modifier that caused the addition of this die, if any
-	pub added_by: Option<&'a Modifier>,
+	pub added_by: Option<&'m Modifier>,
 
 	/// Modifier that caused the drop of this die, if any
-	pub dropped_by: Option<&'a Modifier>,
+	pub dropped_by: Option<&'m Modifier>,
 }
 
-impl<'r> DieRoll<'r> {
+impl<'m> DieRoll<'m> {
 	/// Marks this die roll as added by a given modifier.
 	#[inline]
-	pub fn add<'m: 'r>(&mut self, from: &'m Modifier) {
+	pub fn add(&mut self, from: &'m Modifier) {
 		self.added_by = Some(from);
 	}
 
 	/// Marks this die roll as dropped by a given modifier.
 	#[inline]
-	pub fn drop<'m: 'r>(&mut self, from: &'m Modifier) {
+	pub fn drop(&mut self, from: &'m Modifier) {
 		self.dropped_by = Some(from);
 	}
 
