@@ -1,11 +1,18 @@
+#![allow(clippy::tabs_in_doc_comments)]
+
+//! All functionality for directly creating dice, rolling them, and working with their resulting rolls.
+//! This is the home of the dice "primitives". For using as part of a larger expression, see [`Term::dice`].
+//!
+//! [`Term::dice`]: ../term/enum.Term.html#variant.Dice
+
 use std::{cmp, fmt};
 
 use fastrand::Rng;
 
 use crate::term::Describe;
 
-/// `Dice` are a single set of one or more rollable dice of a specific number of sides,
-/// along with a collection of modifiers to apply to any resulting rolls from them.
+/// A set of one or more rollable dice with a specific number of sides, along with a collection of modifiers to apply to
+/// any resulting rolls from them.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Dice {
 	/// Number of dice to roll
@@ -20,6 +27,7 @@ pub struct Dice {
 
 impl Dice {
 	/// Rolls the dice and applies all of its modifiers to the rolls using the default Rng.
+	#[inline]
 	pub fn roll(&self) -> Result<Rolled, Error> {
 		self.roll_using_rng(&mut Rng::new())
 	}
@@ -44,6 +52,7 @@ impl Dice {
 	/// Rolls a single die (with the same number of sides as the dice in this set)
 	/// with no modifiers using the default Rng.
 	#[must_use]
+	#[inline]
 	pub fn roll_single(&self) -> DieRoll {
 		DieRoll::new_rand(self.sides)
 	}
@@ -51,12 +60,14 @@ impl Dice {
 	/// Rolls a single die (with the same number of sides as the dice in this set)
 	/// with no modifiers using the given Rng.
 	#[must_use]
+	#[inline]
 	pub fn roll_single_using_rng(&self, rng: &mut Rng) -> DieRoll {
 		DieRoll::new_rand_using_rng(self.sides, rng)
 	}
 
 	/// Creates a new set of dice matching this one but without any modifiers.
 	#[must_use]
+	#[inline]
 	pub fn plain(&self) -> Self {
 		Self::new(self.count, self.sides)
 	}
@@ -73,12 +84,14 @@ impl Dice {
 
 	/// Creates a new dice builder.
 	#[must_use]
+	#[inline]
 	pub fn builder() -> Builder {
 		Builder::default()
 	}
 }
 
 impl Default for Dice {
+	#[inline]
 	fn default() -> Self {
 		Self::new(1, 20)
 	}
@@ -103,6 +116,7 @@ impl fmt::Display for Dice {
 /// A `Modifier` is a routine that can be applied to a set of [Dice] to automatically manipulate resulting
 /// [Rolled] dice sets from them as a part of their rolling process.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Modifier {
 	/// Rerolls (drops original and adds a newly-rolled die) dice that meet a condition.
 	/// If the second parameter is `true`, the reroll is done recursively until the rerolled die no longer meets the
@@ -146,6 +160,7 @@ pub enum Modifier {
 
 impl Modifier {
 	/// Applies the modifier to a set of rolls using the default Rng where needed.
+	#[inline]
 	pub fn apply<'rolled, 'modifier: 'rolled>(&'modifier self, rolls: &mut Rolled<'rolled>) -> Result<(), Error> {
 		self.apply_using_rng(rolls, &mut Rng::new())
 	}
@@ -317,10 +332,19 @@ impl fmt::Display for Modifier {
 /// A `Condition` is a test that die values can be checked against.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Condition {
+	/// Checks whether values are equal to its own value. Symbol: `=`
 	Eq(u8),
+
+	/// Checks whether values are greater than its own value. Symbol: `>`
 	Gt(u8),
+
+	/// Checks whether values are greater than or equal to its own value. Symbol: `>=`
 	Gte(u8),
+
+	/// Checks whether values are less than its own value. Symbol: `<`
 	Lt(u8),
+
+	/// Checks whether values are less than or equal to its own value. Symbol: `<=`
 	Lte(u8),
 }
 
@@ -377,8 +401,9 @@ impl fmt::Display for Condition {
 	}
 }
 
-/// A `DieRoll` is a single die resulting from rolling [Dice] and optionally applying modifiers.
+/// A single die produced from rolling [Dice] and optionally applying modifiers.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct DieRoll<'m> {
 	/// Value that was rolled
 	pub val: u8,
@@ -452,6 +477,28 @@ impl Ord for DieRoll<'_> {
 }
 
 impl fmt::Display for DieRoll<'_> {
+	/// Formats the value using the given formatter.
+	///
+	/// The format of a die roll is simply the plain numeric value of the roll.
+	/// If the roll was dropped, it is appended with ` (d)`.
+	///
+	/// # Examples
+	///
+	/// ```
+	/// use dicey::dice::DieRoll;
+	///
+	/// let roll = DieRoll::new(4);
+	/// assert_eq!(roll.to_string(), "4");
+	/// ```
+	///
+	/// ```
+	/// use dicey::dice::{DieRoll, Modifier};
+	///
+	/// let mut roll = DieRoll::new(16);
+	/// let kh_mod = Modifier::KeepHigh(1);
+	/// roll.drop(&kh_mod);
+	/// assert_eq!(roll.to_string(), "16 (d)");
+	/// ```
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "{}{}", self.val, if self.is_dropped() { " (d)" } else { "" })
 	}
@@ -468,7 +515,18 @@ pub struct Rolled<'a> {
 }
 
 impl Rolled<'_> {
-	/// Totals all roll values.
+	/// Calculates the total of all roll values.
+	///
+	/// # Examples
+	///
+	/// ```
+	/// use dicey::dice::Dice;
+	///
+	/// let dice = Dice::new(4, 8);
+	/// let rolled = dice.roll().expect("error rolling dice");
+	/// let total = rolled.total().expect("error totalling rolls");
+	/// assert_eq!(total, rolled.rolls.iter().map(|roll| roll.val as u16).sum());
+	/// ```
 	pub fn total(&self) -> Result<u16, Error> {
 		let mut sum: u16 = 0;
 
@@ -482,14 +540,42 @@ impl Rolled<'_> {
 }
 
 impl Describe for Rolled<'_> {
-	/// Builds a string of the dice expression the roll is from and all of the individual rolled dice.
+	/// Builds a string of the dice expression the roll is from and a list of all of the individual rolled dice
+	/// (see [`DieRoll::fmt()`]).
 	///
-	/// Rolls that have been dropped are suffixed with `(d)`.
-	///
-	/// If `max_rolls`` is specified and there are more rolls than it, the output will be truncated and appended with
+	/// If `max_rolls` is specified and there are more rolls than it, the output will be truncated and appended with
 	/// "X more..." (where X is the remaining roll count past the max).
 	///
-	/// Example output: `3d6kh2[6, 2 (d), 5]`
+	/// # Examples
+	///
+	/// ```
+	/// use dicey::{dice::{Dice, DieRoll, Rolled}, term::Describe};
+	///
+	/// let dice = Dice::builder().count(4).sides(6).keep_high(2).build();
+	/// let kh_mod = dice.modifiers.first().expect("no first modifier");
+	/// let rolled = Rolled {
+	/// 	rolls: vec![
+	/// 		DieRoll::new(6),
+	/// 		{
+	/// 			let mut roll = DieRoll::new(2);
+	/// 			roll.drop(&kh_mod);
+	/// 			roll
+	/// 		},
+	/// 		DieRoll::new(5),
+	/// 		{
+	/// 			let mut roll = DieRoll::new(3);
+	/// 			roll.drop(&kh_mod);
+	/// 			roll
+	/// 		},
+	/// 	],
+	/// 	dice: &dice,
+	/// };
+	///
+	/// assert_eq!(rolled.describe(None), "4d6kh2[6, 2 (d), 5, 3 (d)]");
+	/// assert_eq!(rolled.describe(Some(2)), "4d6kh2[6, 2 (d), 2 more...]");
+	/// ```
+	///
+	/// [`DieRoll::fmt()`]: ./struct.DieRoll.html#method.fmt
 	fn describe(&self, max_rolls: Option<usize>) -> String {
 		let max_rolls = max_rolls.unwrap_or(usize::MAX);
 		let total_rolls = self.rolls.len();
@@ -514,6 +600,11 @@ impl Describe for Rolled<'_> {
 }
 
 impl fmt::Display for Rolled<'_> {
+	/// Formats the value using the given formatter.
+	///
+	/// The output is equivalent to calling [`Rolled::describe(None)`].
+	///
+	/// [`Rolled::describe(None)`]: Rolled::describe()
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{}", self.describe(None))
 	}
@@ -522,17 +613,84 @@ impl fmt::Display for Rolled<'_> {
 /// An error resulting from a dice operation
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+	/// There was an integer overflow when performing mathematical operations on roll values.
+	/// This normally should not ever happen given the types used for die counts, sides, and totals.
 	#[error("integer overflow")]
 	Overflow,
 
+	/// Rolling the dice specified would result in infinite rolls.
+	///
+	/// # Examples
+	///
+	/// ```
+	/// use dicey::dice::{Dice, Error};
+	///
+	/// let dice = Dice::builder().count(4).sides(1).explode(None, true).build();
+	/// assert!(matches!(dice.roll(), Err(Error::InfiniteRolls(..))));
+	/// ```
 	#[error("{0} would result in infinite rolls")]
 	InfiniteRolls(Dice),
 
+	/// The provided symbol doesn't match to a known condition.
+	///
+	/// # Examples
+	///
+	/// ```
+	/// use dicey::dice::{Condition, Error};
+	///
+	/// let cond = Condition::from_symbol_and_val("!", 4);
+	/// assert!(matches!(cond, Err(Error::UnknownCondition(..))));
+	/// ```
 	#[error("unknown condition symbol: {0}")]
 	UnknownCondition(String),
 }
 
-/// Builds [Dice] with a fluent interface
+/// Builds [Dice] with a fluent interface.
+///
+/// # Examples
+///
+/// ## Basic dice
+/// ```
+/// use dicey::dice::Dice;
+///
+/// let dice = Dice::builder().count(2).sides(6).build();
+/// assert_eq!(dice, Dice::new(2, 6));
+/// ```
+///
+/// ## Single modifier
+/// ```
+/// use dicey::dice::{Dice, Modifier};
+///
+/// let dice = Dice::builder().count(6).sides(8).explode(None, true).build();
+/// assert_eq!(
+/// 	dice,
+/// 	Dice {
+/// 		count: 6,
+/// 		sides: 8,
+/// 		modifiers: vec![Modifier::Explode(None, true)]
+/// 	}
+/// );
+/// ```
+///
+/// ## Multiple modifiers
+/// ```
+/// use dicey::dice::{Condition, Dice, Modifier};
+///
+/// let dice = Dice::builder()
+/// 	.count(6)
+/// 	.sides(8)
+/// 	.reroll(Condition::Eq(1), false)
+/// 	.keep_high(4)
+/// 	.build();
+/// assert_eq!(
+/// 	dice,
+/// 	Dice {
+/// 		count: 6,
+/// 		sides: 8,
+/// 		modifiers: vec![Modifier::Reroll(Condition::Eq(1), false), Modifier::KeepHigh(4)],
+/// 	}
+/// );
+/// ```
 #[derive(Debug, Clone, Default)]
 pub struct Builder(Dice);
 
@@ -574,6 +732,7 @@ impl Builder {
 	}
 
 	/// Finalizes the dice.
+	#[must_use]
 	pub fn build(self) -> Dice {
 		self.0
 	}
