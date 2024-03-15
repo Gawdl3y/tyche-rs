@@ -208,7 +208,7 @@ fn construct_exploding(count: u8, sides: u8) -> Dice {
 	assert_eq!(dice.count, count);
 	assert_eq!(dice.sides, sides);
 	assert_eq!(dice.modifiers.len(), 1);
-	assert!(matches!(dice.modifiers.first().unwrap(), Modifier::Explode(..)));
+	assert!(matches!(dice.modifiers.first().unwrap(), Modifier::Explode { .. }));
 	dice
 }
 

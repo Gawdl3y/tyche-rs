@@ -118,16 +118,24 @@ impl fmt::Display for Dice {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Modifier {
-	/// Rerolls (drops original and adds a newly-rolled die) dice that meet a condition.
-	/// If the second parameter is `true`, the reroll is done recursively until the rerolled die no longer meets the
-	/// condition.
-	Reroll(Condition, bool),
+	/// Rerolls (drops original and adds a newly-rolled die) dice that meet a condition
+	Reroll {
+		/// Condition that rolls must pass in order to be rerolled
+		cond: Condition,
 
-	/// Explodes (keeps original and adds an additional newly-rolled die) dice that meet a condition.
-	/// The default condition is being equal to the number of sides for the dice.
-	/// If the second parameter is `true`, the explosion is done recursively for any additional rolls that also meet the
-	/// condition.
-	Explode(Option<Condition>, bool),
+		/// Whether the reroll should be done repeatedly until the rerolled die no longer meets the condition
+		recurse: bool,
+	},
+
+	/// Explodes (keeps original and adds an additional newly-rolled die) dice that meet a condition
+	Explode {
+		/// Condition that rolls must pass in order to explode.
+		/// If `None`, the roll values must be equal to the number of sides of the dice being rolled.
+		cond: Option<Condition>,
+
+		/// Whether the explosion should be done repeatedly for any additional rolls that also meet the condition
+		recurse: bool,
+	},
 
 	/// Keeps only the highest x dice, dropping the rest
 	KeepHigh(u8),
@@ -172,7 +180,7 @@ impl Modifier {
 		rng: &mut Rng,
 	) -> Result<(), Error> {
 		match self {
-			Self::Reroll(cond, recurse) => {
+			Self::Reroll { cond, recurse } => {
 				// Prevent recursively rerolling dice that would result in infinite rerolls
 				if *recurse {
 					match cond {
@@ -226,7 +234,7 @@ impl Modifier {
 				}
 			}
 
-			Self::Explode(cond, recurse) => {
+			Self::Explode { cond, recurse } => {
 				// Prevent recursively exploding dice that would result in infinite explosions
 				if *recurse {
 					match cond {
@@ -316,14 +324,14 @@ impl fmt::Display for Modifier {
 			f,
 			"{}{}",
 			match self {
-				Self::Reroll(_, recurse) => format!("r{}", recurse.then_some("r").unwrap_or("")),
-				Self::Explode(_, recurse) => format!("x{}", recurse.then_some("").unwrap_or("o")),
+				Self::Reroll { recurse, .. } => format!("r{}", recurse.then_some("r").unwrap_or("")),
+				Self::Explode { recurse, .. } => format!("x{}", recurse.then_some("").unwrap_or("o")),
 				Self::KeepHigh(count) => format!("kh{}", if *count > 1 { count.to_string() } else { "".to_owned() }),
 				Self::KeepLow(count) => format!("kl{}", if *count > 1 { count.to_string() } else { "".to_owned() }),
 			},
 			match self {
-				Self::Reroll(cond, _) | Self::Explode(Some(cond), _) => cond.to_string(),
-				Self::Explode(None, _) | Self::KeepHigh(..) | Self::KeepLow(..) => "".to_owned(),
+				Self::Reroll { cond, .. } | Self::Explode { cond: Some(cond), .. } => cond.to_string(),
+				Self::Explode { cond: None, .. } | Self::KeepHigh(..) | Self::KeepLow(..) => "".to_owned(),
 			}
 		)
 	}
@@ -667,8 +675,11 @@ pub enum Error {
 /// 	Dice {
 /// 		count: 6,
 /// 		sides: 8,
-/// 		modifiers: vec![Modifier::Explode(None, true)]
-/// 	}
+/// 		modifiers: vec![Modifier::Explode {
+/// 			cond: None,
+/// 			recurse: true,
+/// 		}],
+/// 	},
 /// );
 /// ```
 ///
@@ -687,8 +698,14 @@ pub enum Error {
 /// 	Dice {
 /// 		count: 6,
 /// 		sides: 8,
-/// 		modifiers: vec![Modifier::Reroll(Condition::Eq(1), false), Modifier::KeepHigh(4)],
-/// 	}
+/// 		modifiers: vec![
+/// 			Modifier::Reroll {
+/// 				cond: Condition::Eq(1),
+/// 				recurse: false
+/// 			},
+/// 			Modifier::KeepHigh(4),
+/// 		],
+/// 	},
 /// );
 /// ```
 #[derive(Debug, Clone, Default)]
@@ -709,13 +726,13 @@ impl Builder {
 
 	/// Adds a reroll modifier to the dice.
 	pub fn reroll(mut self, cond: Condition, recurse: bool) -> Self {
-		self.0.modifiers.push(Modifier::Reroll(cond, recurse));
+		self.0.modifiers.push(Modifier::Reroll { cond, recurse });
 		self
 	}
 
 	/// Adds an exploding modifier to the dice.
 	pub fn explode(mut self, cond: Option<Condition>, recurse: bool) -> Self {
-		self.0.modifiers.push(Modifier::Explode(cond, recurse));
+		self.0.modifiers.push(Modifier::Explode { cond, recurse });
 		self
 	}
 
