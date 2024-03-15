@@ -541,6 +541,12 @@ impl Builder {
 		self
 	}
 
+	/// Adds a reroll modifier to the dice.
+	pub fn reroll(mut self, cond: Condition, recurse: bool) -> Self {
+		self.0.modifiers.push(Modifier::Reroll(cond, recurse));
+		self
+	}
+
 	/// Adds an exploding modifier to the dice.
 	pub fn explode(mut self, cond: Option<Condition>, recurse: bool) -> Self {
 		self.0.modifiers.push(Modifier::Explode(cond, recurse));
