@@ -69,17 +69,20 @@ fn explain_8d6x_result(b: &mut Bencher) {
 			DieRoll::new(6),
 			DieRoll::new(1),
 			DieRoll::new(2),
-			DieRoll {
-				added_by: modifier,
-				..DieRoll::new(4)
+			{
+				let mut roll = DieRoll::new(4);
+				roll.added_by = modifier;
+				roll
 			},
-			DieRoll {
-				added_by: modifier,
-				..DieRoll::new(6)
+			{
+				let mut roll = DieRoll::new(6);
+				roll.added_by = modifier;
+				roll
 			},
-			DieRoll {
-				added_by: modifier,
-				..DieRoll::new(3)
+			{
+				let mut roll = DieRoll::new(3);
+				roll.added_by = modifier;
+				roll
 			},
 		],
 		dice: &dice,
