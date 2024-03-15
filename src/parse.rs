@@ -8,73 +8,13 @@ use crate::{
 };
 
 /// Generates a parser that specifically handles dice terms like "d20", "2d20kh", "8d6x", etc.
-pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Clone {
-	// Parser for dice modifier conditions
-	let condition = choice((
-		just(">=").to(Condition::Gte as fn(u8) -> _),
-		just("<=").to(Condition::Lte as fn(u8) -> _),
-		just('>').to(Condition::Gt as fn(u8) -> _),
-		just('<').to(Condition::Lt as fn(u8) -> _),
-		just('=').to(Condition::Eq as fn(u8) -> _),
-	))
-	.or_not()
-	.then(text::int::<&'src str, _, _>(10))
-	.try_map(|(condfn, val), span| {
-		let val = val
-			.parse()
-			.map_err(|err| Rich::custom(span, format!("Modifier condition: {}", err)))?;
-		Ok(match condfn {
-			Some(condfn) => condfn(val),
-			None => Condition::Eq(val),
-		})
-	});
-
+pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Copy {
 	// Parser for dice expressions
 	text::int(10)
 		.or_not()
 		.then_ignore(just('d'))
 		.then(text::int(10))
-		.then(
-			choice((
-				// Reroll dice (e.g. r1, rr1, r<=2)
-				just('r')
-					.ignored()
-					.then(just('r').ignored().or_not().map(|r| r.is_some()))
-					.then(condition)
-					.map(|((_, recurse), cond)| Modifier::Reroll { cond, recurse }),
-				// Exploding dice (e.g. x, xo, x>4)
-				just('x')
-					.ignored()
-					.then(just('o').ignored().or_not().map(|o| o.is_none()))
-					.then(condition.or_not())
-					.map(|((_, recurse), cond)| Modifier::Explode { cond, recurse }),
-				// Keep lowest (e.g. kl, kl2)
-				just("kl")
-					.ignored()
-					.then(text::int(10).or_not())
-					.try_map(|(_, count), span| {
-						let count = count
-							.unwrap_or("1")
-							.parse()
-							.map_err(|err| Rich::custom(span, format!("Keep lowest count: {}", err)))?;
-						Ok(Modifier::KeepLow(count))
-					}),
-				// Keep highest (e.g. k, kh, kh2)
-				just('k')
-					.ignored()
-					.then_ignore(just('h').or_not())
-					.then(text::int(10).or_not())
-					.try_map(|(_, count), span| {
-						let count = count
-							.unwrap_or("1")
-							.parse()
-							.map_err(|err| Rich::custom(span, format!("Keep highest count: {}", err)))?;
-						Ok(Modifier::KeepHigh(count))
-					}),
-			))
-			.repeated()
-			.collect(),
-		)
+		.then(modifier_list_part())
 		.try_map(|((count, sides), modifiers), span| {
 			let count = count
 				.unwrap_or("1")
@@ -94,8 +34,98 @@ pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'
 
 /// Generates a parser that specifically handles dice terms like "d20", "2d20kh", "8d6x", etc.
 /// and expects end of input
-pub fn dice<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Clone {
+pub fn dice<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Copy {
 	dice_part().then_ignore(end())
+}
+
+/// Generates a parser that specifically handles dice modifiers with conditions like "r1", "xo>4", "kh", etc.
+pub fn modifier_part<'src>() -> impl Parser<'src, &'src str, Modifier, extra::Err<Rich<'src, char>>> + Copy {
+	// Parser for dice modifier conditions
+	let condition = condition_part();
+
+	// Parser for dice modifiers
+	choice((
+		// Reroll dice (e.g. r1, rr1, r<=2)
+		just('r')
+			.ignored()
+			.then(just('r').ignored().or_not().map(|r| r.is_some()))
+			.then(condition)
+			.map(|((_, recurse), cond)| Modifier::Reroll { cond, recurse }),
+		// Exploding dice (e.g. x, xo, x>4)
+		just('x')
+			.ignored()
+			.then(just('o').ignored().or_not().map(|o| o.is_none()))
+			.then(condition.or_not())
+			.map(|((_, recurse), cond)| Modifier::Explode { cond, recurse }),
+		// Keep lowest (e.g. kl, kl2)
+		just("kl")
+			.ignored()
+			.then(text::int(10).or_not())
+			.try_map(|(_, count), span| {
+				let count = count
+					.unwrap_or("1")
+					.parse()
+					.map_err(|err| Rich::custom(span, format!("Keep lowest count: {}", err)))?;
+				Ok(Modifier::KeepLow(count))
+			}),
+		// Keep highest (e.g. k, kh, kh2)
+		just('k')
+			.ignored()
+			.then_ignore(just('h').or_not())
+			.then(text::int(10).or_not())
+			.try_map(|(_, count), span| {
+				let count = count
+					.unwrap_or("1")
+					.parse()
+					.map_err(|err| Rich::custom(span, format!("Keep highest count: {}", err)))?;
+				Ok(Modifier::KeepHigh(count))
+			}),
+	))
+}
+
+/// Generates a parser that specifically handles dice modifiers with conditions like "r1", "xo>4", "kh", etc.
+/// and expects end of input
+pub fn modifier<'src>() -> impl Parser<'src, &'src str, Modifier, extra::Err<Rich<'src, char>>> + Copy {
+	modifier_part().then_ignore(end())
+}
+
+/// Generates a parser that specifically handles dice modifier lists with conditions like "r1kh4", "r1xo>4kh4", etc.
+pub fn modifier_list_part<'src>() -> impl Parser<'src, &'src str, Vec<Modifier>, extra::Err<Rich<'src, char>>> + Copy {
+	modifier_part().repeated().collect()
+}
+
+/// Generates a parser that specifically handles dice modifier lists with conditions like "r1kh4", "r1xo>4kh4", etc.
+/// and expects end of input
+pub fn modifier_list<'src>() -> impl Parser<'src, &'src str, Vec<Modifier>, extra::Err<Rich<'src, char>>> + Copy {
+	modifier_list_part().then_ignore(end())
+}
+
+/// Generates a parser that specifically handles dice modifier conditions like "<3", ">=5", "=1", "1", etc.
+pub fn condition_part<'src>() -> impl Parser<'src, &'src str, Condition, extra::Err<Rich<'src, char>>> + Copy {
+	choice((
+		just(">=").to(Condition::Gte as fn(u8) -> _),
+		just("<=").to(Condition::Lte as fn(u8) -> _),
+		just('>').to(Condition::Gt as fn(u8) -> _),
+		just('<').to(Condition::Lt as fn(u8) -> _),
+		just('=').to(Condition::Eq as fn(u8) -> _),
+	))
+	.or_not()
+	.then(text::int::<&'src str, _, _>(10))
+	.try_map(|(condfn, val), span| {
+		let val = val
+			.parse()
+			.map_err(|err| Rich::custom(span, format!("Modifier condition: {}", err)))?;
+		Ok(match condfn {
+			Some(condfn) => condfn(val),
+			None => Condition::Eq(val),
+		})
+	})
+}
+
+/// Generates a parser that specifically handles dice modifier conditions like "<3", ">=5", "=1", "1", etc.
+/// and expects end of input
+pub fn condition<'src>() -> impl Parser<'src, &'src str, Condition, extra::Err<Rich<'src, char>>> + Copy {
+	condition_part().then_ignore(end())
 }
 
 /// Generates a parser that handles full expressions including mathematical operations, grouping with parentheses,
@@ -178,6 +208,28 @@ impl std::str::FromStr for Dice {
 			details: errs.iter().map(|err| err.to_string()).collect::<Vec<_>>().join("; "),
 		});
 		result
+	}
+}
+
+impl std::str::FromStr for Modifier {
+	type Err = Error;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		let lc = s.to_lowercase();
+		let result = modifier().parse(&lc).into_result().map_err(|errs| Error {
+			details: errs.iter().map(|err| err.to_string()).collect::<Vec<_>>().join("; "),
+		});
+		result
+	}
+}
+
+impl std::str::FromStr for Condition {
+	type Err = Error;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		condition().parse(s).into_result().map_err(|errs| Error {
+			details: errs.iter().map(|err| err.to_string()).collect::<Vec<_>>().join("; "),
+		})
 	}
 }
 
