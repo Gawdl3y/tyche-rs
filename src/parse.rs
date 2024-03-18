@@ -1,4 +1,41 @@
 #![cfg(feature = "parse")]
+#![allow(clippy::tabs_in_doc_comments)]
+
+//! Parser generator functions and implementations of [`std::str::FromStr`] for all dice and term data structures.
+//! Requires the `parse` feature (enabled by default).
+//!
+//! The parser generators generate parsers for parsing dice, dice modifiers, modifier conditions, and full mathematical
+//! dice expressions (such as `4d8 + 2d6x - 3`) from strings. They're all made with [chumsky] and are almost entirely
+//! zero-copy. A parser can be used directly by calling [`chumsky::Parser::parse()`] on it.
+//!
+//! # Examples
+//!
+//! ## Parsing Dice
+//! ```
+//! use dicey::dice::Dice;
+//!
+//! let dice: Dice = "6d8x".parse().expect("unable to parse dice");
+//! assert_eq!(dice, Dice::builder().count(6).sides(8).explode(None, true).build());
+//! ```
+//!
+//! ## Parsing Terms (mathematical dice expressions)
+//! ```
+//! use dicey::{dice::Dice, term::Term};
+//!
+//! let term: Term = "6d8x + 4d6 - 3".parse().expect("unable to parse term");
+//! assert_eq!(
+//! 	term,
+//! 	Term::Sub(
+//! 		Box::new(Term::Add(
+//! 			Box::new(Term::Dice(
+//! 				Dice::builder().count(6).sides(8).explode(None, true).build()
+//! 			)),
+//! 			Box::new(Term::Dice(Dice::builder().count(4).sides(6).build())),
+//! 		)),
+//! 		Box::new(Term::Num(3)),
+//! 	)
+//! );
+//! ```
 
 use chumsky::prelude::*;
 
@@ -182,8 +219,10 @@ pub fn term<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, 
 	term_part().then_ignore(end())
 }
 
+/// Error that can occur while parsing a string into a dice or term-related structure via [`std::str::FromStr`].
 #[derive(Debug, Clone)]
 pub struct Error {
+	/// Details of the originating one or more [`chumsky::error::Rich`]s that occurred during parsing
 	pub details: String,
 }
 

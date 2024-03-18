@@ -91,6 +91,7 @@ impl Dice {
 }
 
 impl Default for Dice {
+	/// Creates the default dice (1d20).
 	#[inline]
 	fn default() -> Self {
 		Self::new(1, 20)
@@ -113,8 +114,8 @@ impl fmt::Display for Dice {
 	}
 }
 
-/// A `Modifier` is a routine that can be applied to a set of [Dice] to automatically manipulate resulting
-/// [Rolled] dice sets from them as a part of their rolling process.
+/// Routines that can be applied to a set of [Dice] to automatically manipulate resulting [Rolled] dice sets from them
+/// as part of their rolling process.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Modifier {
@@ -337,7 +338,7 @@ impl fmt::Display for Modifier {
 	}
 }
 
-/// A `Condition` is a test that die values can be checked against.
+/// A test that die values can be checked against.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Condition {
 	/// Checks whether values are equal to its own value. Symbol: `=`
@@ -485,7 +486,7 @@ impl Ord for DieRoll<'_> {
 }
 
 impl fmt::Display for DieRoll<'_> {
-	/// Formats the value using the given formatter.
+	/// Formats the value using the given formatter. [Read more][core::fmt::Debug::fmt()]
 	///
 	/// The format of a die roll is simply the plain numeric value of the roll.
 	/// If the roll was dropped, it is appended with ` (d)`.
@@ -596,7 +597,7 @@ impl Describe for Rolled<'_> {
 				.iter()
 				.take(max_rolls)
 				.map(|r| r.to_string())
-				.collect::<Vec<String>>()
+				.collect::<Vec<_>>()
 				.join(", "),
 			if truncated_rolls > 0 {
 				format!(", {} more...", truncated_rolls)
@@ -608,7 +609,7 @@ impl Describe for Rolled<'_> {
 }
 
 impl fmt::Display for Rolled<'_> {
-	/// Formats the value using the given formatter.
+	/// Formats the value using the given formatter. [Read more][core::fmt::Debug::fmt()]
 	///
 	/// The output is equivalent to calling [`Rolled::describe(None)`].
 	///
