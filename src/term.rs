@@ -83,16 +83,17 @@ impl Term {
 			}
 		}
 	}
+}
 
-	/// Builds a full usable expression from the terms
-	pub fn expression(&self) -> String {
+impl Describe for Term {
+	fn describe(&self, _max_rolls: Option<usize>) -> String {
 		match self {
 			Self::Num(x) => x.to_string(),
 			Self::Dice(dice) => dice.to_string(),
 
 			Self::Neg(x) => match x.as_ref() {
-				Self::Num(..) | Self::Dice(..) => format!("-{}", x.expression()),
-				_ => format!("-({})", x.expression()),
+				Self::Num(..) | Self::Dice(..) => format!("-{}", x.describe(None)),
+				_ => format!("-({})", x.describe(None)),
 			},
 
 			Self::Add(a, b) => self.describe_binary_term('+', a.as_ref(), b.as_ref(), None),
@@ -104,15 +105,9 @@ impl Term {
 	}
 }
 
-impl Describe for Term {
-	fn describe(&self, _max_rolls: Option<usize>) -> String {
-		self.expression()
-	}
-}
-
 impl std::fmt::Display for Term {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(f, "{}", self.expression())
+		write!(f, "{}", self.describe(None))
 	}
 }
 
