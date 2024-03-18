@@ -30,7 +30,7 @@
 //! 			Box::new(Term::Dice(
 //! 				Dice::builder().count(6).sides(8).explode(None, true).build()
 //! 			)),
-//! 			Box::new(Term::Dice(Dice::builder().count(4).sides(6).build())),
+//! 			Box::new(Term::Dice(Dice::new(4, 6))),
 //! 		)),
 //! 		Box::new(Term::Num(3)),
 //! 	)
