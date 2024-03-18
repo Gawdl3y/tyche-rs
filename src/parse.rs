@@ -1,7 +1,7 @@
 #![cfg(feature = "parse")]
 #![allow(clippy::tabs_in_doc_comments)]
 
-//! Parser generator functions and implementations of [`std::str::FromStr`] for all dice and term data structures.
+//! Parser generator functions and implementations of [`std::str::FromStr`] for all dice and expression data structures.
 //! Requires the `parse` feature (enabled by default).
 //!
 //! The parser generators generate parsers for parsing dice, dice modifiers, modifier conditions, and full mathematical
@@ -18,21 +18,21 @@
 //! assert_eq!(dice, Dice::builder().count(6).sides(8).explode(None, true).build());
 //! ```
 //!
-//! ## Parsing Terms (mathematical dice expressions)
+//! ## Parsing expressions
 //! ```
-//! use dicey::{dice::Dice, term::Term};
+//! use dicey::{dice::Dice, expr::Expr};
 //!
-//! let term: Term = "6d8x + 4d6 - 3".parse().expect("unable to parse term");
+//! let expr: Expr = "6d8x + 4d6 - 3".parse().expect("unable to parse expression");
 //! assert_eq!(
-//! 	term,
-//! 	Term::Sub(
-//! 		Box::new(Term::Add(
-//! 			Box::new(Term::Dice(
+//! 	expr,
+//! 	Expr::Sub(
+//! 		Box::new(Expr::Add(
+//! 			Box::new(Expr::Dice(
 //! 				Dice::builder().count(6).sides(8).explode(None, true).build()
 //! 			)),
-//! 			Box::new(Term::Dice(Dice::new(4, 6))),
+//! 			Box::new(Expr::Dice(Dice::new(4, 6))),
 //! 		)),
-//! 		Box::new(Term::Num(3)),
+//! 		Box::new(Expr::Num(3)),
 //! 	)
 //! );
 //! ```
@@ -41,12 +41,12 @@ use chumsky::prelude::*;
 
 use crate::{
 	dice::{Condition, Dice, Modifier},
-	term::Term,
+	expr::Expr,
 };
 
 /// Generates a parser that specifically handles dice with or without modifiers like "d20", "2d20kh", "8d6x", etc.
 pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Copy {
-	// Parser for dice expressions
+	// Parser for dice literals
 	text::int(10)
 		.or_not()
 		.then_ignore(just('d'))
@@ -166,34 +166,34 @@ pub fn condition<'src>() -> impl Parser<'src, &'src str, Condition, extra::Err<R
 }
 
 /// Generates a parser that handles full expressions including mathematical operations, grouping with parentheses,
-/// dice expressions, etc.
-pub fn term_part<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, char>>> + Clone {
+/// dice, etc.
+pub fn expr_part<'src>() -> impl Parser<'src, &'src str, Expr, extra::Err<Rich<'src, char>>> + Clone {
 	// Helper function for operators
 	let op = |c| just(c).padded();
 
-	recursive(|term| {
+	recursive(|expr| {
 		// Parser for numbers
 		let int = text::int(10).try_map(|s: &str, span| {
 			s.parse()
-				.map(Term::Num)
+				.map(Expr::Num)
 				.map_err(|e| Rich::custom(span, format!("{}", e)))
 		});
 
-		// Parser for dice expressions
-		let dice = dice_part().map(Term::Dice);
+		// Parser for dice literals
+		let dice = dice_part().map(Expr::Dice);
 
 		// Parser for expressions enclosed in parentheses
-		let atom = dice.or(int).or(term.delimited_by(just('('), just(')'))).padded();
+		let atom = dice.or(int).or(expr.delimited_by(just('('), just(')'))).padded();
 
 		// Parser for negative sign
-		let unary = op('-').repeated().foldr(atom, |_op, rhs| Term::Neg(Box::new(rhs)));
+		let unary = op('-').repeated().foldr(atom, |_op, rhs| Expr::Neg(Box::new(rhs)));
 
 		// Parser for multiplication and division (round up or down)
 		let product = unary.clone().foldl(
 			choice((
-				op('*').to(Term::Mul as fn(_, _) -> _),
-				op('/').to(Term::DivDown as fn(_, _) -> _),
-				op('\\').to(Term::DivUp as fn(_, _) -> _),
+				op('*').to(Expr::Mul as fn(_, _) -> _),
+				op('/').to(Expr::DivDown as fn(_, _) -> _),
+				op('\\').to(Expr::DivUp as fn(_, _) -> _),
 			))
 			.then(unary)
 			.repeated(),
@@ -203,8 +203,8 @@ pub fn term_part<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'
 		// Parser for addition and subtraction operators
 		product.clone().foldl(
 			choice((
-				op('+').to(Term::Add as fn(_, _) -> _),
-				op('-').to(Term::Sub as fn(_, _) -> _),
+				op('+').to(Expr::Add as fn(_, _) -> _),
+				op('-').to(Expr::Sub as fn(_, _) -> _),
 			))
 			.then(product)
 			.repeated(),
@@ -214,12 +214,12 @@ pub fn term_part<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'
 }
 
 /// Generates a parser that handles full expressions including mathematical operations, grouping with parentheses,
-/// dice expressions, etc. and expects end of input
-pub fn term<'src>() -> impl Parser<'src, &'src str, Term, extra::Err<Rich<'src, char>>> + Clone {
-	term_part().then_ignore(end())
+/// dice, etc. and expects end of input
+pub fn expr<'src>() -> impl Parser<'src, &'src str, Expr, extra::Err<Rich<'src, char>>> + Clone {
+	expr_part().then_ignore(end())
 }
 
-/// Error that can occur while parsing a string into a dice or term-related structure via [`std::str::FromStr`].
+/// Error that can occur while parsing a string into a dice or expression-related structure via [`std::str::FromStr`].
 #[derive(Debug, Clone)]
 pub struct Error {
 	/// Details of the originating one or more [`chumsky::error::Rich`]s that occurred during parsing
@@ -272,12 +272,12 @@ impl std::str::FromStr for Condition {
 	}
 }
 
-impl std::str::FromStr for Term {
+impl std::str::FromStr for Expr {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		let lc = s.to_lowercase();
-		let result = term().parse(&lc).into_result().map_err(|errs| Error {
+		let result = expr().parse(&lc).into_result().map_err(|errs| Error {
 			details: errs.iter().map(|err| err.to_string()).collect::<Vec<_>>().join("; "),
 		});
 		result

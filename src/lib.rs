@@ -6,12 +6,12 @@
 //! [FoundryVTT's modifiers]: https://foundryvtt.com/article/dice-modifiers/
 
 pub mod dice;
-pub mod term;
+pub mod expr;
 
 #[cfg(feature = "parse")]
 pub mod parse;
 #[cfg(feature = "parse")]
-pub use parse::term as parser;
+pub use parse::expr as parser;
 
 #[cfg(test)]
 mod tests;

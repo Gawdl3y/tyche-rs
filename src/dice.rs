@@ -2,15 +2,15 @@
 
 //! All functionality for directly creating dice, rolling them, and working with their resulting rolls.
 //!
-//! This is the home of the dice "primitives". For using as part of a larger expression, see [`Term::dice`].
+//! This is the home of the dice "primitives". For using as part of a larger expression, see [`Expr::dice`].
 //!
-//! [`Term::dice`]: ../term/enum.Term.html#variant.Dice
+//! [`Expr::dice`]: ../expr/enum.Expr.html#variant.Dice
 
 use std::{cmp, fmt};
 
 use fastrand::Rng;
 
-use crate::term::Describe;
+use crate::expr::Describe;
 
 /// A set of one or more rollable dice with a specific number of sides, along with a collection of modifiers to apply to
 /// any resulting rolls from them.
@@ -550,7 +550,7 @@ impl Rolled<'_> {
 }
 
 impl Describe for Rolled<'_> {
-	/// Builds a string of the dice expression the roll is from and a list of all of the individual rolled dice
+	/// Builds a string of the dice the roll is from and a list of all of the individual rolled dice
 	/// (see [`DieRoll::fmt()`]).
 	///
 	/// If `list_limit` is specified and there are more rolls than it, the output will be truncated and appended with
@@ -559,7 +559,7 @@ impl Describe for Rolled<'_> {
 	/// # Examples
 	///
 	/// ```
-	/// use dicey::{dice::{Dice, DieRoll, Rolled}, term::Describe};
+	/// use dicey::{dice::{Dice, DieRoll, Rolled}, expr::Describe};
 	///
 	/// let dice = Dice::builder().count(4).sides(6).keep_high(2).build();
 	/// let kh_mod = dice.modifiers.first().expect("no first modifier");
