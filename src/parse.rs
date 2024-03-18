@@ -44,7 +44,7 @@ use crate::{
 	term::Term,
 };
 
-/// Generates a parser that specifically handles dice terms like "d20", "2d20kh", "8d6x", etc.
+/// Generates a parser that specifically handles dice with or without modifiers like "d20", "2d20kh", "8d6x", etc.
 pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Copy {
 	// Parser for dice expressions
 	text::int(10)
@@ -69,7 +69,7 @@ pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'
 		})
 }
 
-/// Generates a parser that specifically handles dice terms like "d20", "2d20kh", "8d6x", etc.
+/// Generates a parser that specifically handles dice with or without modifiers like "d20", "2d20kh", "8d6x", etc.
 /// and expects end of input
 pub fn dice<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Copy {
 	dice_part().then_ignore(end())

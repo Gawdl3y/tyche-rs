@@ -1,6 +1,7 @@
 #![allow(clippy::tabs_in_doc_comments)]
 
 //! All functionality for directly creating dice, rolling them, and working with their resulting rolls.
+//!
 //! This is the home of the dice "primitives". For using as part of a larger expression, see [`Term::dice`].
 //!
 //! [`Term::dice`]: ../term/enum.Term.html#variant.Dice
