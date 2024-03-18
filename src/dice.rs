@@ -552,7 +552,7 @@ impl Describe for Rolled<'_> {
 	/// Builds a string of the dice expression the roll is from and a list of all of the individual rolled dice
 	/// (see [`DieRoll::fmt()`]).
 	///
-	/// If `max_rolls` is specified and there are more rolls than it, the output will be truncated and appended with
+	/// If `list_limit` is specified and there are more rolls than it, the output will be truncated and appended with
 	/// "X more..." (where X is the remaining roll count past the max).
 	///
 	/// # Examples
@@ -585,17 +585,17 @@ impl Describe for Rolled<'_> {
 	/// ```
 	///
 	/// [`DieRoll::fmt()`]: ./struct.DieRoll.html#method.fmt
-	fn describe(&self, max_rolls: Option<usize>) -> String {
-		let max_rolls = max_rolls.unwrap_or(usize::MAX);
+	fn describe(&self, list_limit: Option<usize>) -> String {
+		let list_limit = list_limit.unwrap_or(usize::MAX);
 		let total_rolls = self.rolls.len();
-		let truncated_rolls = total_rolls.saturating_sub(max_rolls);
+		let truncated_rolls = total_rolls.saturating_sub(list_limit);
 
 		format!(
 			"{}[{}{}]",
 			self.dice,
 			self.rolls
 				.iter()
-				.take(max_rolls)
+				.take(list_limit)
 				.map(|r| r.to_string())
 				.collect::<Vec<_>>()
 				.join(", "),

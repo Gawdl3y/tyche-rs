@@ -111,10 +111,10 @@ impl Describe for Term {
 	/// operations could be considered ambiguous, such as when mixing addition and multiplication together. All strings
 	/// output from this should result in the exact same Term layout when re-parsing them.
 	///
-	/// `max_rolls` does not affect the output of this implementation in any way since there are no possible lists of
+	/// `list_limit` does not affect the output of this implementation in any way since there are no possible lists of
 	/// elements included, so it is always safe to pass `None`.
 	#[inline]
-	fn describe(&self, _max_rolls: Option<usize>) -> String {
+	fn describe(&self, _list_limit: Option<usize>) -> String {
 		match self {
 			Self::Num(x) => x.to_string(),
 			Self::Dice(dice) => dice.to_string(),
@@ -203,21 +203,21 @@ impl EvaledTerm<'_> {
 }
 
 impl Describe for EvaledTerm<'_> {
-	fn describe(&self, max_rolls: Option<usize>) -> String {
+	fn describe(&self, list_limit: Option<usize>) -> String {
 		match self {
 			Self::Num(x) => x.to_string(),
-			Self::Dice(roll) => roll.describe(max_rolls),
+			Self::Dice(roll) => roll.describe(list_limit),
 
 			Self::Neg(x) => match x.as_ref() {
-				Self::Num(..) | Self::Dice(..) => format!("-{}", x.describe(max_rolls)),
-				_ => format!("-({})", x.describe(max_rolls)),
+				Self::Num(..) | Self::Dice(..) => format!("-{}", x.describe(list_limit)),
+				_ => format!("-({})", x.describe(list_limit)),
 			},
 
-			Self::Add(a, b) => self.describe_binary_term('+', a.as_ref(), b.as_ref(), max_rolls),
-			Self::Sub(a, b) => self.describe_binary_term('-', a.as_ref(), b.as_ref(), max_rolls),
-			Self::Mul(a, b) => self.describe_binary_term('*', a.as_ref(), b.as_ref(), max_rolls),
-			Self::DivDown(a, b) => self.describe_binary_term('/', a.as_ref(), b.as_ref(), max_rolls),
-			Self::DivUp(a, b) => self.describe_binary_term('\\', a.as_ref(), b.as_ref(), max_rolls),
+			Self::Add(a, b) => self.describe_binary_term('+', a.as_ref(), b.as_ref(), list_limit),
+			Self::Sub(a, b) => self.describe_binary_term('-', a.as_ref(), b.as_ref(), list_limit),
+			Self::Mul(a, b) => self.describe_binary_term('*', a.as_ref(), b.as_ref(), list_limit),
+			Self::DivDown(a, b) => self.describe_binary_term('/', a.as_ref(), b.as_ref(), list_limit),
+			Self::DivUp(a, b) => self.describe_binary_term('\\', a.as_ref(), b.as_ref(), list_limit),
 		}
 	}
 }
@@ -288,8 +288,8 @@ pub trait HasTermType {
 pub trait Describe {
 	/// Builds a detailed expression string with additional information about non-deterministic elements.
 	/// Any elements of the expression that can have a different result between multiple evaluations or multiple results
-	/// should list all of the specific individual results that occurred (ideally, up to `max_rolls` of them).
-	fn describe(&self, max_rolls: Option<usize>) -> String;
+	/// should list all of the specific individual results that occurred (ideally, up to `list_limit` of them).
+	fn describe(&self, list_limit: Option<usize>) -> String;
 }
 
 /// Trait for describing binary expressions with influence from own type.
@@ -302,7 +302,7 @@ trait DescribeBinaryTerm: HasTermType + Describe {
 		op: char,
 		a: &impl DescribeBinaryTerm,
 		b: &impl DescribeBinaryTerm,
-		max_rolls: Option<usize>,
+		list_limit: Option<usize>,
 	) -> String {
 		format!(
 			"{} {} {}",
@@ -311,8 +311,8 @@ trait DescribeBinaryTerm: HasTermType + Describe {
 				| (TermType::Multiplicative, TermType::Additive)
 				| (TermType::Unary, TermType::Additive)
 				| (TermType::Unary, TermType::Multiplicative)
-				| (TermType::Unary, TermType::Unary) => paren_wrap(a.describe(max_rolls)),
-				_ => a.describe(max_rolls),
+				| (TermType::Unary, TermType::Unary) => paren_wrap(a.describe(list_limit)),
+				_ => a.describe(list_limit),
 			},
 			op,
 			match (self.term_type(), b.term_type()) {
@@ -320,8 +320,8 @@ trait DescribeBinaryTerm: HasTermType + Describe {
 				| (TermType::Multiplicative, TermType::Additive)
 				| (TermType::Unary, TermType::Additive)
 				| (TermType::Unary, TermType::Multiplicative)
-				| (TermType::Unary, TermType::Unary) => paren_wrap(b.describe(max_rolls)),
-				_ => b.describe(max_rolls),
+				| (TermType::Unary, TermType::Unary) => paren_wrap(b.describe(list_limit)),
+				_ => b.describe(list_limit),
 			}
 		)
 	}
