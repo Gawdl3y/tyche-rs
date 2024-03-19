@@ -1,5 +1,7 @@
 //! AST-like data structures for evaluating full mathematical dice expressions and working with their results.
 
+use fastrand::Rng;
+
 use crate::dice::{Dice, Error as DiceError, Rolled};
 
 /// Generates an implementation of [`ExprType`] and [`DescribeBinaryExpr`] for an enum type.
@@ -87,6 +89,15 @@ impl Expr {
 			Self::Mul(a, b) => EvaledExpr::Mul(Box::new(a.eval()?), Box::new(b.eval()?)),
 			Self::DivDown(a, b) => EvaledExpr::DivDown(Box::new(a.eval()?), Box::new(b.eval()?)),
 			Self::DivUp(a, b) => EvaledExpr::DivUp(Box::new(a.eval()?), Box::new(b.eval()?)),
+		})
+	}
+
+	/// Evaluates the expression, passing along a specific Rng to use for any random number generation.
+	/// See [`Self::eval()`] for more information.
+	pub fn eval_using_rng(&self, rng: &mut Rng) -> Result<EvaledExpr, Error> {
+		Ok(match self {
+			Self::Dice(dice) => EvaledExpr::Dice(dice.roll_using_rng(rng)?),
+			_ => self.eval()?,
 		})
 	}
 
