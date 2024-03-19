@@ -223,6 +223,11 @@ impl Describe for EvaledExpr<'_> {
 }
 
 impl std::fmt::Display for EvaledExpr<'_> {
+	/// Formats the value using the given formatter. [Read more][core::fmt::Debug::fmt()]
+	///
+	/// The output of this implementation is equivalent to [`EvaledExpr::describe(None)`].
+	///
+	/// [`EvaledExpr::describe(None)`]: ./enum.EvaledExpr.html#method.describe
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{}", self.describe(None))
 	}
