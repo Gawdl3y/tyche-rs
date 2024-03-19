@@ -115,7 +115,7 @@ impl fmt::Display for Dice {
 	}
 }
 
-/// Routines that can be applied to a set of [Dice] to automatically manipulate resulting [Rolled] dice sets from them
+/// Routines that can be applied to [`Dice`] to automatically manipulate resulting [`Rolled`] dice sets from them
 /// as part of their rolling process.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -339,7 +339,7 @@ impl fmt::Display for Modifier {
 	}
 }
 
-/// A test that die values can be checked against.
+/// Test that die values can be checked against
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Condition {
 	/// Checks whether values are equal to its own value. Symbol: `=`
@@ -411,7 +411,7 @@ impl fmt::Display for Condition {
 	}
 }
 
-/// A single die produced from rolling [Dice] and optionally applying modifiers.
+/// Single die produced from rolling [`Dice`] and optionally applying [`Modifier`]s
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct DieRoll<'m> {
@@ -514,7 +514,7 @@ impl fmt::Display for DieRoll<'_> {
 	}
 }
 
-/// A representation of the result from rolling a single set of [Dice]
+/// Representation of the result from rolling [`Dice`]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rolled<'a> {
 	/// Each individual die roll that was made
@@ -553,8 +553,8 @@ impl Describe for Rolled<'_> {
 	/// Builds a string of the dice the roll is from and a list of all of the individual rolled dice
 	/// (see [`DieRoll::fmt()`]).
 	///
-	/// If `list_limit` is specified and there are more rolls than it, the output will be truncated and appended with
-	/// "X more..." (where X is the remaining roll count past the max).
+	/// If `list_limit` is specified and there are more rolls than it, the list of rolled dice will be truncated and
+	/// appended with "X more..." (where X is the remaining roll count past the max).
 	///
 	/// # Examples
 	///
@@ -612,9 +612,9 @@ impl Describe for Rolled<'_> {
 impl fmt::Display for Rolled<'_> {
 	/// Formats the value using the given formatter. [Read more][core::fmt::Debug::fmt()]
 	///
-	/// The output is equivalent to calling [`Rolled::describe(None)`].
+	/// The output is equivalent to calling [`Self::describe(None)`].
 	///
-	/// [`Rolled::describe(None)`]: Rolled::describe()
+	/// [`Self::describe(None)`]: Self::describe()
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{}", self.describe(None))
 	}
@@ -655,7 +655,7 @@ pub enum Error {
 	UnknownCondition(String),
 }
 
-/// Builds [Dice] with a fluent interface.
+/// Builds [`Dice`] with a fluent interface.
 ///
 /// # Examples
 ///

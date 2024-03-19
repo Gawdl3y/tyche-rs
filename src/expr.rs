@@ -102,7 +102,7 @@ impl Expr {
 	}
 
 	/// Checks whether the expression is deterministic (will always yield the same value with every evaluation).
-	/// A [`Expr::Num`] will always return `true`, a [`Expr::Dice`] will always return `false` unless the dice they
+	/// A [`Self::Num`] will always return `true`, a [`Self::Dice`] will always return `false` unless the dice they
 	/// contain only have one side, and all unary and binary expressions forward the check to their children.
 	#[must_use]
 	pub fn is_deterministic(&self) -> bool {
@@ -147,9 +147,9 @@ impl Describe for Expr {
 impl std::fmt::Display for Expr {
 	/// Formats the value using the given formatter. [Read more][core::fmt::Debug::fmt()]
 	///
-	/// The output of this implementation is equivalent to [`Expr::describe(None)`].
+	/// The output of this implementation is equivalent to [`Self::describe(None)`].
 	///
-	/// [`Expr::describe(None)`]: ./enum.Expr.html#method.describe
+	/// [`Self::describe(None)`]: Self::describe()
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{}", self.describe(None))
 	}
@@ -186,7 +186,7 @@ pub enum EvaledExpr<'r> {
 expr_type_impl!(EvaledExpr<'_>);
 
 impl EvaledExpr<'_> {
-	/// Calculates the total (sum) of the evaluated expression and all of its children (if any).
+	/// Calculates the final result of the evaluated expression and all of its children (if any).
 	pub fn calc(&self) -> Result<i32, Error> {
 		match self {
 			Self::Num(x) => Ok(*x),
@@ -236,9 +236,9 @@ impl Describe for EvaledExpr<'_> {
 impl std::fmt::Display for EvaledExpr<'_> {
 	/// Formats the value using the given formatter. [Read more][core::fmt::Debug::fmt()]
 	///
-	/// The output of this implementation is equivalent to [`EvaledExpr::describe(None)`].
+	/// The output of this implementation is equivalent to [`Self::describe(None)`].
 	///
-	/// [`EvaledExpr::describe(None)`]: ./enum.EvaledExpr.html#method.describe
+	/// [`Self::describe(None)`]: Self::describe()
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{}", self.describe(None))
 	}
