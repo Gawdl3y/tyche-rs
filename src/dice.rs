@@ -426,15 +426,27 @@ pub struct DieRoll<'m> {
 }
 
 impl<'m> DieRoll<'m> {
-	/// Marks this die roll as added by a given modifier.
-	#[inline]
+	/// Marks this die roll as added by a given modifier, setting [`Self::added_by`].
+	///
+	/// # Panics
+	/// Panics if `Self::added_by` is already [`Some`].
 	pub fn add(&mut self, from: &'m Modifier) {
+		if self.added_by.is_some() {
+			panic!("marking a die as added that has already been marked as added by another modifier");
+		}
+
 		self.added_by = Some(from);
 	}
 
-	/// Marks this die roll as dropped by a given modifier.
-	#[inline]
+	/// Marks this die roll as dropped by a given modifier, setting [`Self::dropped_by`].
+	///
+	/// # Panics
+	/// Panics if `Self::dropped_by` is already [`Some`].
 	pub fn drop(&mut self, from: &'m Modifier) {
+		if self.dropped_by.is_some() {
+			panic!("marking a die as dropped that has already been marked as dropped by another modifier");
+		}
+
 		self.dropped_by = Some(from);
 	}
 
