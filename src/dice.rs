@@ -580,13 +580,13 @@ impl Describe for Rolled<'_> {
 	/// 		DieRoll::new(6),
 	/// 		{
 	/// 			let mut roll = DieRoll::new(2);
-	/// 			roll.drop(&kh_mod);
+	/// 			roll.drop(kh_mod);
 	/// 			roll
 	/// 		},
 	/// 		DieRoll::new(5),
 	/// 		{
 	/// 			let mut roll = DieRoll::new(3);
-	/// 			roll.drop(&kh_mod);
+	/// 			roll.drop(kh_mod);
 	/// 			roll
 	/// 		},
 	/// 	],
