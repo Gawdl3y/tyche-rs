@@ -283,3 +283,85 @@ impl std::str::FromStr for Expr {
 		result
 	}
 }
+
+/// Trait to allow convenient access to a parser generator for any implementing type
+pub trait HasParser<T> {
+	/// Generates a parser for this type that expects end of input. Requires the `parse` feature (enabled by default).
+	#[must_use]
+	fn parser<'src>() -> impl Parser<'src, &'src str, T, extra::Err<Rich<'src, char>>> + Clone;
+
+	/// Generates a parser for this type that parses up to the end of valid input. Requires the `parse` feature
+	/// (enabled by default).
+	#[must_use]
+	fn part_parser<'src>() -> impl Parser<'src, &'src str, T, extra::Err<Rich<'src, char>>> + Clone;
+}
+
+impl HasParser<Dice> for Dice {
+	#[must_use]
+	#[inline]
+	#[allow(refining_impl_trait)]
+	fn parser<'src>(
+	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Copy {
+		dice()
+	}
+
+	#[must_use]
+	#[inline]
+	#[allow(refining_impl_trait)]
+	fn part_parser<'src>(
+	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Copy {
+		dice_part()
+	}
+}
+
+impl HasParser<Modifier> for Modifier {
+	#[must_use]
+	#[inline]
+	#[allow(refining_impl_trait)]
+	fn parser<'src>(
+	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Copy {
+		modifier()
+	}
+
+	#[must_use]
+	#[inline]
+	#[allow(refining_impl_trait)]
+	fn part_parser<'src>(
+	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Copy {
+		modifier_part()
+	}
+}
+
+impl HasParser<Condition> for Condition {
+	#[must_use]
+	#[inline]
+	#[allow(refining_impl_trait)]
+	fn parser<'src>(
+	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Copy {
+		condition()
+	}
+
+	#[must_use]
+	#[inline]
+	#[allow(refining_impl_trait)]
+	fn part_parser<'src>(
+	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Copy {
+		condition_part()
+	}
+}
+
+impl HasParser<Expr> for Expr {
+	#[must_use]
+	#[inline]
+	fn parser<'src>(
+	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Clone {
+		expr()
+	}
+
+	#[must_use]
+	#[inline]
+	fn part_parser<'src>(
+	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Clone {
+		expr_part()
+	}
+}
