@@ -1,5 +1,3 @@
-#![allow(clippy::tabs_in_doc_comments)]
-
 //! All functionality for directly creating dice, rolling them, and working with their resulting rolls.
 //!
 //! This is the home of the dice "primitives". For using as part of a larger expression, see [`Expr::dice`].
@@ -15,6 +13,7 @@ use crate::expr::Describe;
 /// A set of one or more rollable dice with a specific number of sides, along with a collection of modifiers to apply to
 /// any resulting rolls from them.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[allow(clippy::exhaustive_structs)]
 pub struct Dice {
 	/// Number of dice to roll
 	pub count: u8,
@@ -28,12 +27,18 @@ pub struct Dice {
 
 impl Dice {
 	/// Rolls the dice and applies all of its modifiers to the rolls using the default Rng.
+	///
+	/// # Errors
+	/// If any errors are encountered while applying the dice's modifiers, an error variant is returned.
 	#[inline]
 	pub fn roll(&self) -> Result<Rolled, Error> {
 		self.roll_using_rng(&mut Rng::new())
 	}
 
 	/// Rolls the dice and applies all of its modifiers to the rolls using the given Rng.
+	///
+	/// # Errors
+	/// If any errors are encountered while applying the dice's modifiers, an error variant is returned.
 	pub fn roll_using_rng(&self, rng: &mut Rng) -> Result<Rolled, Error> {
 		// Roll the dice!
 		let mut rolls = Vec::with_capacity(self.count as usize);
@@ -43,7 +48,7 @@ impl Dice {
 
 		// Apply all modifiers
 		let mut rolls = Rolled { rolls, dice: self };
-		for modifier in self.modifiers.iter() {
+		for modifier in &self.modifiers {
 			modifier.apply_using_rng(&mut rolls, rng)?;
 		}
 
@@ -69,13 +74,13 @@ impl Dice {
 	/// Creates a new set of dice matching this one but without any modifiers.
 	#[must_use]
 	#[inline]
-	pub fn plain(&self) -> Self {
+	pub const fn plain(&self) -> Self {
 		Self::new(self.count, self.sides)
 	}
 
 	/// Creates a new set of dice with a given count and number of sides.
 	#[must_use]
-	pub fn new(count: u8, sides: u8) -> Self {
+	pub const fn new(count: u8, sides: u8) -> Self {
 		Self {
 			count,
 			sides,
@@ -106,11 +111,7 @@ impl fmt::Display for Dice {
 			"{}d{}{}",
 			self.count,
 			self.sides,
-			self.modifiers
-				.iter()
-				.map(|m| m.to_string())
-				.collect::<Vec<_>>()
-				.join("")
+			self.modifiers.iter().map(ToString::to_string).collect::<String>()
 		)
 	}
 }
@@ -170,153 +171,180 @@ pub enum Modifier {
 
 impl Modifier {
 	/// Applies the modifier to a set of rolls using the default Rng where needed.
+	///
+	/// # Errors
+	/// If applying the modifier would result in infinite additional die rolls, an error variant is returned.
 	#[inline]
-	pub fn apply<'rolled, 'modifier: 'rolled>(&'modifier self, rolls: &mut Rolled<'rolled>) -> Result<(), Error> {
+	pub fn apply<'r, 'm: 'r>(&'m self, rolls: &mut Rolled<'r>) -> Result<(), Error> {
 		self.apply_using_rng(rolls, &mut Rng::new())
 	}
 
 	/// Applies the modifier to a set of rolls using a given Rng where needed.
-	pub fn apply_using_rng<'rolled, 'modifier: 'rolled>(
-		&'modifier self,
-		rolled: &mut Rolled<'rolled>,
-		rng: &mut Rng,
-	) -> Result<(), Error> {
+	///
+	/// # Errors
+	/// If applying the modifier would result in infinite additional die rolls, an error variant is returned.
+	pub fn apply_using_rng<'r, 'm: 'r>(&'m self, rolled: &mut Rolled<'r>, rng: &mut Rng) -> Result<(), Error> {
 		match self {
-			Self::Reroll { cond, recurse } => {
-				// Prevent recursively rerolling dice that would result in infinite rerolls
-				if *recurse {
-					match cond {
-						Condition::Eq(other) if *other == 1 && rolled.dice.sides == 1 => {
-							return Err(Error::InfiniteRolls(rolled.dice.clone()));
-						}
-						Condition::Gt(other) if *other == 0 => {
-							return Err(Error::InfiniteRolls(rolled.dice.clone()));
-						}
-						Condition::Gte(other) if *other <= 1 => {
-							return Err(Error::InfiniteRolls(rolled.dice.clone()));
-						}
-						Condition::Lt(other) if *other > rolled.dice.sides => {
-							return Err(Error::InfiniteRolls(rolled.dice.clone()));
-						}
-						Condition::Lte(other) if *other >= rolled.dice.sides => {
-							return Err(Error::InfiniteRolls(rolled.dice.clone()));
-						}
-						_ => {}
-					}
-				}
-
-				loop {
-					// Determine which rolls qualify for reroll
-					let mut to_reroll = rolled
-						.rolls
-						.iter_mut()
-						.filter(|r| !r.is_dropped())
-						.filter(|r| cond.check(r.val))
-						.collect::<Vec<_>>();
-
-					if to_reroll.is_empty() {
-						break;
-					}
-
-					// Roll additional dice and drop the originals
-					let mut rerolls = Vec::with_capacity(to_reroll.len());
-					for roll in to_reroll.iter_mut() {
-						let mut reroll = rolled.dice.roll_single_using_rng(rng);
-						reroll.add(self);
-						rerolls.push(reroll);
-						roll.drop(self);
-					}
-
-					// Add the rerolls to the rolls
-					rolled.rolls.append(&mut rerolls);
-
-					if !*recurse {
-						break;
-					}
-				}
-			}
-
-			Self::Explode { cond, recurse } => {
-				// Prevent recursively exploding dice that would result in infinite explosions
-				if *recurse {
-					match cond {
-						Some(Condition::Eq(other)) if *other == 1 && rolled.dice.sides == 1 => {
-							return Err(Error::InfiniteRolls(rolled.dice.clone()));
-						}
-						Some(Condition::Gt(other)) if *other == 0 => {
-							return Err(Error::InfiniteRolls(rolled.dice.clone()));
-						}
-						Some(Condition::Gte(other)) if *other <= 1 => {
-							return Err(Error::InfiniteRolls(rolled.dice.clone()));
-						}
-						Some(Condition::Lt(other)) if *other > rolled.dice.sides => {
-							return Err(Error::InfiniteRolls(rolled.dice.clone()));
-						}
-						Some(Condition::Lte(other)) if *other >= rolled.dice.sides => {
-							return Err(Error::InfiniteRolls(rolled.dice.clone()));
-						}
-						None if rolled.dice.sides == 1 => {
-							return Err(Error::InfiniteRolls(rolled.dice.clone()));
-						}
-						_ => {}
-					}
-				}
-
-				// Determine how many initial rolls qualify for explosion
-				let mut to_explode = rolled
-					.rolls
-					.iter()
-					.filter(|r| !r.is_dropped())
-					.filter(|r| match cond {
-						Some(cond) => cond.check(r.val),
-						None => r.val == rolled.dice.sides,
-					})
-					.count();
-
-				loop {
-					// Roll additional dice
-					let mut explosions = Vec::with_capacity(to_explode);
-					for _ in 0..to_explode {
-						let mut roll = rolled.dice.roll_single_using_rng(rng);
-						roll.add(self);
-						explosions.push(roll);
-					}
-
-					// Determine how many additional rolls qualify for explosion, then add the explosions to the rolls
-					to_explode = recurse
-						.then(|| {
-							explosions
-								.iter()
-								.filter(|r| match cond {
-									Some(cond) => cond.check(r.val),
-									None => r.val == rolled.dice.sides,
-								})
-								.count()
-						})
-						.unwrap_or(0);
-					rolled.rolls.append(&mut explosions);
-
-					if to_explode == 0 {
-						break;
-					}
-				}
-			}
-
-			Self::KeepHigh(count) => {
-				let mut refs = rolled.rolls.iter_mut().filter(|r| !r.is_dropped()).collect::<Vec<_>>();
-				refs.sort();
-				refs.reverse();
-				refs.iter_mut().skip(*count as usize).for_each(|roll| roll.drop(self));
-			}
-
-			Self::KeepLow(count) => {
-				let mut refs = rolled.rolls.iter_mut().filter(|r| !r.is_dropped()).collect::<Vec<_>>();
-				refs.sort();
-				refs.iter_mut().skip(*count as usize).for_each(|roll| roll.drop(self));
-			}
+			Self::Reroll { cond, recurse } => self.apply_reroll(rolled, rng, cond, *recurse)?,
+			Self::Explode { cond, recurse } => self.apply_explode(rolled, rng, cond, *recurse)?,
+			Self::KeepHigh(count) => self.apply_keep_high(rolled, *count),
+			Self::KeepLow(count) => self.apply_keep_low(rolled, *count),
 		};
 
 		Ok(())
+	}
+
+	/// Applies the [`Self::Reroll`] variant to a set of rolled dice.
+	fn apply_reroll<'r, 'm: 'r>(
+		&'m self,
+		rolled: &mut Rolled<'r>,
+		rng: &mut Rng,
+		cond: &Condition,
+		recurse: bool,
+	) -> Result<(), Error> {
+		// Prevent recursively rerolling dice that would result in infinite rerolls
+		if recurse {
+			match cond {
+				Condition::Eq(other) if *other == 1 && rolled.dice.sides == 1 => {
+					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				}
+				Condition::Gt(other) if *other == 0 => {
+					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				}
+				Condition::Gte(other) if *other <= 1 => {
+					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				}
+				Condition::Lt(other) if *other > rolled.dice.sides => {
+					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				}
+				Condition::Lte(other) if *other >= rolled.dice.sides => {
+					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				}
+				_ => {}
+			}
+		}
+
+		loop {
+			// Determine which rolls qualify for reroll
+			let mut to_reroll = rolled
+				.rolls
+				.iter_mut()
+				.filter(|r| !r.is_dropped())
+				.filter(|r| cond.check(r.val))
+				.collect::<Vec<_>>();
+
+			if to_reroll.is_empty() {
+				break;
+			}
+
+			// Roll additional dice and drop the originals
+			let mut rerolls = Vec::with_capacity(to_reroll.len());
+			for roll in &mut to_reroll {
+				let mut reroll = rolled.dice.roll_single_using_rng(rng);
+				reroll.add(self);
+				rerolls.push(reroll);
+				roll.drop(self);
+			}
+
+			// Add the rerolls to the rolls
+			rolled.rolls.append(&mut rerolls);
+
+			if !recurse {
+				break;
+			}
+		}
+
+		Ok(())
+	}
+
+	/// Applies the [`Self::Explode`] variant to a set of rolled dice.
+	fn apply_explode<'r, 'm: 'r>(
+		&'m self,
+		rolled: &mut Rolled<'r>,
+		rng: &mut Rng,
+		cond: &Option<Condition>,
+		recurse: bool,
+	) -> Result<(), Error> {
+		// Prevent recursively exploding dice that would result in infinite explosions
+		if recurse {
+			match cond {
+				Some(Condition::Eq(other)) if *other == 1 && rolled.dice.sides == 1 => {
+					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				}
+				Some(Condition::Gt(other)) if *other == 0 => {
+					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				}
+				Some(Condition::Gte(other)) if *other <= 1 => {
+					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				}
+				Some(Condition::Lt(other)) if *other > rolled.dice.sides => {
+					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				}
+				Some(Condition::Lte(other)) if *other >= rolled.dice.sides => {
+					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				}
+				None if rolled.dice.sides == 1 => {
+					return Err(Error::InfiniteRolls(rolled.dice.clone()));
+				}
+				_ => {}
+			}
+		}
+
+		// Determine how many initial rolls qualify for explosion
+		let mut to_explode = rolled
+			.rolls
+			.iter()
+			.filter(|r| !r.is_dropped())
+			.filter(|r| match cond {
+				Some(cond) => cond.check(r.val),
+				None => r.val == rolled.dice.sides,
+			})
+			.count();
+
+		loop {
+			// Roll additional dice
+			let mut explosions = Vec::with_capacity(to_explode);
+			for _ in 0..to_explode {
+				let mut roll = rolled.dice.roll_single_using_rng(rng);
+				roll.add(self);
+				explosions.push(roll);
+			}
+
+			// Determine how many additional rolls qualify for explosion, then add the explosions to the rolls
+			to_explode = recurse
+				.then(|| {
+					explosions
+						.iter()
+						.filter(|r| match cond {
+							Some(cond) => cond.check(r.val),
+							None => r.val == rolled.dice.sides,
+						})
+						.count()
+				})
+				.unwrap_or(0);
+			rolled.rolls.append(&mut explosions);
+
+			if to_explode == 0 {
+				break;
+			}
+		}
+
+		Ok(())
+	}
+
+	/// Applies the [`Self::KeepHigh`] variant to a set of rolled dice.
+	fn apply_keep_high<'r, 'm: 'r>(&'m self, rolled: &mut Rolled<'r>, count: u8) {
+		let mut refs = rolled.rolls.iter_mut().filter(|r| !r.is_dropped()).collect::<Vec<_>>();
+		refs.sort();
+		refs.reverse();
+		refs.iter_mut().skip(count as usize).for_each(|roll| roll.drop(self));
+	}
+
+	/// Applies the [`Self::KeepLow`] variant to a set of rolled dice.
+	fn apply_keep_low<'r, 'm: 'r>(&'m self, rolled: &mut Rolled<'r>, count: u8) {
+		let mut refs = rolled.rolls.iter_mut().filter(|r| !r.is_dropped()).collect::<Vec<_>>();
+		refs.sort();
+		refs.iter_mut().skip(count as usize).for_each(|roll| roll.drop(self));
 	}
 }
 
@@ -328,12 +356,12 @@ impl fmt::Display for Modifier {
 			match self {
 				Self::Reroll { recurse, .. } => format!("r{}", recurse.then_some("r").unwrap_or("")),
 				Self::Explode { recurse, .. } => format!("x{}", recurse.then_some("").unwrap_or("o")),
-				Self::KeepHigh(count) => format!("kh{}", if *count > 1 { count.to_string() } else { "".to_owned() }),
-				Self::KeepLow(count) => format!("kl{}", if *count > 1 { count.to_string() } else { "".to_owned() }),
+				Self::KeepHigh(count) => format!("kh{}", if *count > 1 { count.to_string() } else { String::new() }),
+				Self::KeepLow(count) => format!("kl{}", if *count > 1 { count.to_string() } else { String::new() }),
 			},
 			match self {
 				Self::Reroll { cond, .. } | Self::Explode { cond: Some(cond), .. } => cond.to_string(),
-				Self::Explode { cond: None, .. } | Self::KeepHigh(..) | Self::KeepLow(..) => "".to_owned(),
+				Self::Explode { cond: None, .. } | Self::KeepHigh(..) | Self::KeepLow(..) => String::new(),
 			}
 		)
 	}
@@ -341,6 +369,7 @@ impl fmt::Display for Modifier {
 
 /// Test that die values can be checked against
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[allow(clippy::exhaustive_enums)]
 pub enum Condition {
 	/// Checks whether values are equal to its own value. Symbol: `=`
 	Eq(u8),
@@ -360,6 +389,9 @@ pub enum Condition {
 
 impl Condition {
 	/// Creates a condition from its corresponding symbol and a given value.
+	///
+	/// # Errors
+	/// If the symbol doesn't match to a known condition variant, an error variant will be returned.
 	pub fn from_symbol_and_val(symbol: &str, val: u8) -> Result<Self, Error> {
 		Ok(match symbol {
 			"=" => Self::Eq(val),
@@ -372,7 +404,8 @@ impl Condition {
 	}
 
 	/// Checks a value against the condition.
-	pub fn check(&self, val: u8) -> bool {
+	#[must_use]
+	pub const fn check(&self, val: u8) -> bool {
 		match self {
 			Self::Eq(expected) => val == *expected,
 			Self::Gt(expected) => val > *expected,
@@ -383,7 +416,8 @@ impl Condition {
 	}
 
 	/// Gets the symbol that represents the condition.
-	pub fn symbol(&self) -> &'static str {
+	#[must_use]
+	pub const fn symbol(&self) -> &'static str {
 		match self {
 			Self::Eq(..) => "=",
 			Self::Gt(..) => ">",
@@ -431,10 +465,10 @@ impl<'m> DieRoll<'m> {
 	/// # Panics
 	/// Panics if `Self::added_by` is already [`Some`].
 	pub fn add(&mut self, from: &'m Modifier) {
-		if self.added_by.is_some() {
-			panic!("marking a die as added that has already been marked as added by another modifier");
-		}
-
+		assert!(
+			self.added_by.is_none(),
+			"marking a die as added that has already been marked as added by another modifier"
+		);
 		self.added_by = Some(from);
 	}
 
@@ -443,28 +477,30 @@ impl<'m> DieRoll<'m> {
 	/// # Panics
 	/// Panics if `Self::dropped_by` is already [`Some`].
 	pub fn drop(&mut self, from: &'m Modifier) {
-		if self.dropped_by.is_some() {
-			panic!("marking a die as dropped that has already been marked as dropped by another modifier");
-		}
-
+		assert!(
+			self.dropped_by.is_none(),
+			"marking a die as dropped that has already been marked as dropped by another modifier"
+		);
 		self.dropped_by = Some(from);
 	}
 
 	/// Indicates whether this die roll was part of the original set (not added by a modifier).
+	#[must_use]
 	#[inline]
-	pub fn is_original(&self) -> bool {
+	pub const fn is_original(&self) -> bool {
 		self.added_by.is_none()
 	}
 
 	/// Indicates whether this die roll was been dropped by a modifier.
+	#[must_use]
 	#[inline]
-	pub fn is_dropped(&self) -> bool {
+	pub const fn is_dropped(&self) -> bool {
 		self.dropped_by.is_some()
 	}
 
-	/// Creates a new DieRoll with the given value.
+	/// Creates a new die roll with the given value.
 	#[must_use]
-	pub fn new(val: u8) -> Self {
+	pub const fn new(val: u8) -> Self {
 		Self {
 			val,
 			added_by: None,
@@ -472,14 +508,14 @@ impl<'m> DieRoll<'m> {
 		}
 	}
 
-	/// Creates a new DieRoll with a random value using the default Rng.
+	/// Creates a new die roll with a random value using the default Rng.
 	#[must_use]
 	pub fn new_rand(max: u8) -> Self {
 		let mut rng = Rng::new();
 		Self::new_rand_using_rng(rng.u8(1..=max), &mut rng)
 	}
 
-	/// Creates a new DieRoll with a random value using the given Rng.
+	/// Creates a new die roll with a random value using the given Rng.
 	#[must_use]
 	pub fn new_rand_using_rng(max: u8, rng: &mut Rng) -> Self {
 		Self::new(if max > 0 { rng.u8(1..=max) } else { 0 })
@@ -505,7 +541,6 @@ impl fmt::Display for DieRoll<'_> {
 	/// If the roll was dropped, it is appended with ` (d)`.
 	///
 	/// # Examples
-	///
 	/// ```
 	/// use dicey::dice::DieRoll;
 	///
@@ -528,6 +563,7 @@ impl fmt::Display for DieRoll<'_> {
 
 /// Representation of the result from rolling [`Dice`]
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::exhaustive_structs)]
 pub struct Rolled<'a> {
 	/// Each individual die roll that was made
 	pub rolls: Vec<DieRoll<'a>>,
@@ -539,8 +575,10 @@ pub struct Rolled<'a> {
 impl Rolled<'_> {
 	/// Calculates the total of all roll values.
 	///
-	/// # Examples
+	/// # Errors
+	/// If there is an integer overflow while summing the die rolls, an error variant is returned.
 	///
+	/// # Examples
 	/// ```
 	/// use dicey::dice::Dice;
 	///
@@ -554,7 +592,7 @@ impl Rolled<'_> {
 
 		// Sum all rolls that haven't been dropped
 		for r in self.rolls.iter().filter(|r| !r.is_dropped()) {
-			sum = sum.checked_add(r.val as u16).ok_or(Error::Overflow)?;
+			sum = sum.checked_add(u16::from(r.val)).ok_or(Error::Overflow)?;
 		}
 
 		Ok(sum)
@@ -569,7 +607,6 @@ impl Describe for Rolled<'_> {
 	/// appended with "X more..." (where X is the remaining roll count past the max).
 	///
 	/// # Examples
-	///
 	/// ```
 	/// use dicey::{dice::{Dice, DieRoll, Rolled}, expr::Describe};
 	///
@@ -609,13 +646,13 @@ impl Describe for Rolled<'_> {
 			self.rolls
 				.iter()
 				.take(list_limit)
-				.map(|r| r.to_string())
+				.map(ToString::to_string)
 				.collect::<Vec<_>>()
 				.join(", "),
 			if truncated_rolls > 0 {
-				format!(", {} more...", truncated_rolls)
+				format!(", {truncated_rolls} more...")
 			} else {
-				"".to_owned()
+				String::new()
 			}
 		)
 	}
@@ -634,6 +671,7 @@ impl fmt::Display for Rolled<'_> {
 
 /// An error resulting from a dice operation
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
 pub enum Error {
 	/// There was an integer overflow when performing mathematical operations on roll values.
 	/// This normally should not ever happen given the types used for die counts, sides, and totals.
@@ -643,7 +681,6 @@ pub enum Error {
 	/// Rolling the dice specified would result in infinite rolls.
 	///
 	/// # Examples
-	///
 	/// ```
 	/// use dicey::dice::{Dice, Error};
 	///
@@ -656,7 +693,6 @@ pub enum Error {
 	/// The provided symbol doesn't match to a known condition.
 	///
 	/// # Examples
-	///
 	/// ```
 	/// use dicey::dice::{Condition, Error};
 	///
@@ -727,36 +763,42 @@ pub struct Builder(Dice);
 
 impl Builder {
 	/// Sets the number of dice to roll.
-	pub fn count(mut self, count: u8) -> Self {
+	#[must_use]
+	pub const fn count(mut self, count: u8) -> Self {
 		self.0.count = count;
 		self
 	}
 
 	/// Sets the number of sides per die.
-	pub fn sides(mut self, sides: u8) -> Self {
+	#[must_use]
+	pub const fn sides(mut self, sides: u8) -> Self {
 		self.0.sides = sides;
 		self
 	}
 
 	/// Adds a reroll modifier to the dice.
+	#[must_use]
 	pub fn reroll(mut self, cond: Condition, recurse: bool) -> Self {
 		self.0.modifiers.push(Modifier::Reroll { cond, recurse });
 		self
 	}
 
 	/// Adds an exploding modifier to the dice.
+	#[must_use]
 	pub fn explode(mut self, cond: Option<Condition>, recurse: bool) -> Self {
 		self.0.modifiers.push(Modifier::Explode { cond, recurse });
 		self
 	}
 
 	/// Adds a keep highest modifier to the dice.
+	#[must_use]
 	pub fn keep_high(mut self, count: u8) -> Self {
 		self.0.modifiers.push(Modifier::KeepHigh(count));
 		self
 	}
 
 	/// Adds a keep lowest modifier to the dice.
+	#[must_use]
 	pub fn keep_low(mut self, count: u8) -> Self {
 		self.0.modifiers.push(Modifier::KeepLow(count));
 		self

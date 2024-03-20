@@ -3,6 +3,13 @@ name = "dicey"
 version = "0.1.0"
 description = "Dice rolling and dice expression (with a syntax similar to FoundryVTT) parsing library"
 authors = ["Schuyler Cebulskie <me@gawdl3y.dev>"]
+keywords = ["dice", "d20", "rpg", "dnd", "tabletop"]
+categories = [
+	"games",
+	"game-development",
+	"mathematics",
+	"parser-implementations",
+]
 license = "LGPL-3.0-or-later"
 repository = "https://github.com/Gawdl3y/dicey-rs"
 edition = "2021"

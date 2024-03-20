@@ -1,12 +1,11 @@
 #![cfg(feature = "parse")]
-#![allow(clippy::tabs_in_doc_comments)]
 
-//! Parser generator functions and implementations of [`std::str::FromStr`] for all dice and expression data structures.
+//! Parser generator functions and implementations of [`str::FromStr`] for all dice and expression data structures.
 //! Requires the `parse` feature (enabled by default).
 //!
 //! The parser generators generate parsers for parsing dice, dice modifiers, modifier conditions, and full mathematical
 //! dice expressions (such as `4d8 + 2d6x - 3`) from strings. They're all made with [chumsky] and are almost entirely
-//! zero-copy. A parser can be used directly by calling [`chumsky::Parser::parse()`] on it.
+//! zero-copy. A parser can be used directly by calling [`Parser::parse()`] on it.
 //!
 //! # Examples
 //!
@@ -37,6 +36,8 @@
 //! );
 //! ```
 
+use std::{fmt, str};
+
 use chumsky::prelude::*;
 
 use crate::{
@@ -45,6 +46,7 @@ use crate::{
 };
 
 /// Generates a parser that specifically handles dice with or without modifiers like "d20", "2d20kh", "8d6x", etc.
+#[must_use]
 pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Copy {
 	// Parser for dice literals
 	text::int(10)
@@ -56,10 +58,10 @@ pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'
 			let count = count
 				.unwrap_or("1")
 				.parse()
-				.map_err(|err| Rich::custom(span, format!("Dice count: {}", err)))?;
+				.map_err(|err| Rich::custom(span, format!("Dice count: {err}")))?;
 			let sides = sides
 				.parse()
-				.map_err(|err| Rich::custom(span, format!("Dice sides: {}", err)))?;
+				.map_err(|err| Rich::custom(span, format!("Dice sides: {err}")))?;
 
 			Ok(Dice {
 				count,
@@ -71,11 +73,13 @@ pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'
 
 /// Generates a parser that specifically handles dice with or without modifiers like "d20", "2d20kh", "8d6x", etc.
 /// and expects end of input
+#[must_use]
 pub fn dice<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Copy {
 	dice_part().then_ignore(end())
 }
 
 /// Generates a parser that specifically handles dice modifiers with conditions like "r1", "xo>4", "kh", etc.
+#[must_use]
 pub fn modifier_part<'src>() -> impl Parser<'src, &'src str, Modifier, extra::Err<Rich<'src, char>>> + Copy {
 	// Parser for dice modifier conditions
 	let condition = condition_part();
@@ -87,22 +91,22 @@ pub fn modifier_part<'src>() -> impl Parser<'src, &'src str, Modifier, extra::Er
 			.ignored()
 			.then(just('r').ignored().or_not().map(|r| r.is_some()))
 			.then(condition)
-			.map(|((_, recurse), cond)| Modifier::Reroll { cond, recurse }),
+			.map(|(((), recurse), cond)| Modifier::Reroll { cond, recurse }),
 		// Exploding dice (e.g. x, xo, x>4)
 		just('x')
 			.ignored()
 			.then(just('o').ignored().or_not().map(|o| o.is_none()))
 			.then(condition.or_not())
-			.map(|((_, recurse), cond)| Modifier::Explode { cond, recurse }),
+			.map(|(((), recurse), cond)| Modifier::Explode { cond, recurse }),
 		// Keep lowest (e.g. kl, kl2)
 		just("kl")
 			.ignored()
 			.then(text::int(10).or_not())
-			.try_map(|(_, count), span| {
+			.try_map(|((), count), span| {
 				let count = count
 					.unwrap_or("1")
 					.parse()
-					.map_err(|err| Rich::custom(span, format!("Keep lowest count: {}", err)))?;
+					.map_err(|err| Rich::custom(span, format!("Keep lowest count: {err}")))?;
 				Ok(Modifier::KeepLow(count))
 			}),
 		// Keep highest (e.g. k, kh, kh2)
@@ -110,11 +114,11 @@ pub fn modifier_part<'src>() -> impl Parser<'src, &'src str, Modifier, extra::Er
 			.ignored()
 			.then_ignore(just('h').or_not())
 			.then(text::int(10).or_not())
-			.try_map(|(_, count), span| {
+			.try_map(|((), count), span| {
 				let count = count
 					.unwrap_or("1")
 					.parse()
-					.map_err(|err| Rich::custom(span, format!("Keep highest count: {}", err)))?;
+					.map_err(|err| Rich::custom(span, format!("Keep highest count: {err}")))?;
 				Ok(Modifier::KeepHigh(count))
 			}),
 	))
@@ -122,22 +126,26 @@ pub fn modifier_part<'src>() -> impl Parser<'src, &'src str, Modifier, extra::Er
 
 /// Generates a parser that specifically handles dice modifiers with conditions like "r1", "xo>4", "kh", etc.
 /// and expects end of input
+#[must_use]
 pub fn modifier<'src>() -> impl Parser<'src, &'src str, Modifier, extra::Err<Rich<'src, char>>> + Copy {
 	modifier_part().then_ignore(end())
 }
 
 /// Generates a parser that specifically handles dice modifier lists with conditions like "r1kh4", "r1xo>4kh4", etc.
+#[must_use]
 pub fn modifier_list_part<'src>() -> impl Parser<'src, &'src str, Vec<Modifier>, extra::Err<Rich<'src, char>>> + Copy {
 	modifier_part().repeated().collect()
 }
 
 /// Generates a parser that specifically handles dice modifier lists with conditions like "r1kh4", "r1xo>4kh4", etc.
 /// and expects end of input
+#[must_use]
 pub fn modifier_list<'src>() -> impl Parser<'src, &'src str, Vec<Modifier>, extra::Err<Rich<'src, char>>> + Copy {
 	modifier_list_part().then_ignore(end())
 }
 
 /// Generates a parser that specifically handles dice modifier conditions like "<3", ">=5", "=1", "1", etc.
+#[must_use]
 pub fn condition_part<'src>() -> impl Parser<'src, &'src str, Condition, extra::Err<Rich<'src, char>>> + Copy {
 	choice((
 		just(">=").to(Condition::Gte as fn(u8) -> _),
@@ -151,33 +159,29 @@ pub fn condition_part<'src>() -> impl Parser<'src, &'src str, Condition, extra::
 	.try_map(|(condfn, val), span| {
 		let val = val
 			.parse()
-			.map_err(|err| Rich::custom(span, format!("Modifier condition: {}", err)))?;
-		Ok(match condfn {
-			Some(condfn) => condfn(val),
-			None => Condition::Eq(val),
-		})
+			.map_err(|err| Rich::custom(span, format!("Modifier condition: {err}")))?;
+		Ok(condfn.map_or_else(|| Condition::Eq(val), |condfn| condfn(val)))
 	})
 }
 
 /// Generates a parser that specifically handles dice modifier conditions like "<3", ">=5", "=1", "1", etc.
 /// and expects end of input
+#[must_use]
 pub fn condition<'src>() -> impl Parser<'src, &'src str, Condition, extra::Err<Rich<'src, char>>> + Copy {
 	condition_part().then_ignore(end())
 }
 
 /// Generates a parser that handles full expressions including mathematical operations, grouping with parentheses,
 /// dice, etc.
+#[must_use]
 pub fn expr_part<'src>() -> impl Parser<'src, &'src str, Expr, extra::Err<Rich<'src, char>>> + Clone {
 	// Helper function for operators
 	let op = |c| just(c).padded();
 
 	recursive(|expr| {
 		// Parser for numbers
-		let int = text::int(10).try_map(|s: &str, span| {
-			s.parse()
-				.map(Expr::Num)
-				.map_err(|e| Rich::custom(span, format!("{}", e)))
-		});
+		let int = text::int(10)
+			.try_map(|s: &str, span| s.parse().map(Expr::Num).map_err(|e| Rich::custom(span, format!("{e}"))));
 
 		// Parser for dice literals
 		let dice = dice_part().map(Expr::Dice);
@@ -215,70 +219,73 @@ pub fn expr_part<'src>() -> impl Parser<'src, &'src str, Expr, extra::Err<Rich<'
 
 /// Generates a parser that handles full expressions including mathematical operations, grouping with parentheses,
 /// dice, etc. and expects end of input
+#[must_use]
 pub fn expr<'src>() -> impl Parser<'src, &'src str, Expr, extra::Err<Rich<'src, char>>> + Clone {
 	expr_part().then_ignore(end())
 }
 
 /// Error that can occur while parsing a string into a dice or expression-related structure via [`std::str::FromStr`].
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct Error {
-	/// Details of the originating one or more [`chumsky::error::Rich`]s that occurred during parsing
+	/// Details of the originating one or more [`Rich`]s that occurred during parsing
 	pub details: String,
 }
 
+#[allow(clippy::absolute_paths)]
 impl std::error::Error for Error {
 	fn description(&self) -> &str {
 		&self.details
 	}
 }
 
-impl std::fmt::Display for Error {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Error {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "{}", self.details)
 	}
 }
 
-impl std::str::FromStr for Dice {
+impl str::FromStr for Dice {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		let lc = s.to_lowercase();
 		let result = dice().parse(&lc).into_result().map_err(|errs| Error {
-			details: errs.iter().map(|err| err.to_string()).collect::<Vec<_>>().join("; "),
+			details: errs.iter().map(ToString::to_string).collect::<Vec<_>>().join("; "),
 		});
 		result
 	}
 }
 
-impl std::str::FromStr for Modifier {
+impl str::FromStr for Modifier {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		let lc = s.to_lowercase();
 		let result = modifier().parse(&lc).into_result().map_err(|errs| Error {
-			details: errs.iter().map(|err| err.to_string()).collect::<Vec<_>>().join("; "),
+			details: errs.iter().map(ToString::to_string).collect::<Vec<_>>().join("; "),
 		});
 		result
 	}
 }
 
-impl std::str::FromStr for Condition {
+impl str::FromStr for Condition {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		condition().parse(s).into_result().map_err(|errs| Error {
-			details: errs.iter().map(|err| err.to_string()).collect::<Vec<_>>().join("; "),
+			details: errs.iter().map(ToString::to_string).collect::<Vec<_>>().join("; "),
 		})
 	}
 }
 
-impl std::str::FromStr for Expr {
+impl str::FromStr for Expr {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		let lc = s.to_lowercase();
 		let result = expr().parse(&lc).into_result().map_err(|errs| Error {
-			details: errs.iter().map(|err| err.to_string()).collect::<Vec<_>>().join("; "),
+			details: errs.iter().map(ToString::to_string).collect::<Vec<_>>().join("; "),
 		});
 		result
 	}
@@ -297,71 +304,55 @@ pub trait HasParser<T> {
 }
 
 impl HasParser<Dice> for Dice {
-	#[must_use]
 	#[inline]
 	#[allow(refining_impl_trait)]
-	fn parser<'src>(
-	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Copy {
+	fn parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
 		dice()
 	}
 
-	#[must_use]
 	#[inline]
 	#[allow(refining_impl_trait)]
-	fn part_parser<'src>(
-	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Copy {
+	fn part_parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
 		dice_part()
 	}
 }
 
 impl HasParser<Modifier> for Modifier {
-	#[must_use]
 	#[inline]
 	#[allow(refining_impl_trait)]
-	fn parser<'src>(
-	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Copy {
+	fn parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
 		modifier()
 	}
 
-	#[must_use]
 	#[inline]
 	#[allow(refining_impl_trait)]
-	fn part_parser<'src>(
-	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Copy {
+	fn part_parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
 		modifier_part()
 	}
 }
 
 impl HasParser<Condition> for Condition {
-	#[must_use]
 	#[inline]
 	#[allow(refining_impl_trait)]
-	fn parser<'src>(
-	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Copy {
+	fn parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
 		condition()
 	}
 
-	#[must_use]
 	#[inline]
 	#[allow(refining_impl_trait)]
-	fn part_parser<'src>(
-	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Copy {
+	fn part_parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
 		condition_part()
 	}
 }
 
 impl HasParser<Expr> for Expr {
-	#[must_use]
 	#[inline]
-	fn parser<'src>(
-	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Clone {
+	fn parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Clone {
 		expr()
 	}
 
-	#[must_use]
 	#[inline]
-	fn part_parser<'src>(
-	) -> impl chumsky::Parser<'src, &'src str, Self, chumsky::extra::Err<chumsky::error::Rich<'src, char>>> + Clone {
+	fn part_parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Clone {
 		expr_part()
 	}
 }

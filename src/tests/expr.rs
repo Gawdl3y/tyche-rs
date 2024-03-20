@@ -1,6 +1,6 @@
 use crate::{
 	dice::Dice,
-	expr::{Error, EvaledExpr, Expr},
+	expr::{Error, Evaled, Expr},
 };
 
 #[test]
@@ -68,8 +68,8 @@ fn basic_dice_math() {
 	let evaled = expr.eval().unwrap();
 
 	let dice_total = match evaled {
-		EvaledExpr::Add(ref boxed, _) => match boxed.as_ref() {
-			EvaledExpr::Dice(evaled_dice) => evaled_dice.total().unwrap() as i32,
+		Evaled::Add(ref boxed, _) => match boxed.as_ref() {
+			Evaled::Dice(evaled_dice) => evaled_dice.total().unwrap() as i32,
 			_ => panic!(),
 		},
 		_ => panic!(),

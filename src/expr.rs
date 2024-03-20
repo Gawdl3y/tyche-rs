@@ -1,50 +1,48 @@
 //! AST-like data structures for evaluating full mathematical dice expressions and working with their results.
 
+use std::fmt;
+
 use fastrand::Rng;
 
 use crate::dice::{Dice, Error as DiceError, Rolled};
 
-/// Generates an implementation of [`ExprType`] and [`DescribeBinaryExpr`] for an enum type.
-/// This is very tightly coupled with the expected variants (Val, Dice, Neg, Add, Sub, Mul, DivDown, DivUp).
-macro_rules! expr_type_impl {
+/// Generates an implementation of [`HasOpType`] and [`DescribeBinaryExpr`] for an enum type.
+/// This is very tightly coupled with the expected variants:
+/// `Val`, `Dice`, `Neg`, `Add`, `Sub`, `Mul`, `DivDown`, and `DivUp`.
+macro_rules! op_type_impl {
 	($name:ty) => {
-		impl HasExprType for $name {
-			fn expr_type(&self) -> ExprType {
+		impl HasOpType for $name {
+			fn op_type(&self) -> OpType {
 				match self {
-					Self::Num(..) | Self::Dice(..) => ExprType::Value,
-					Self::Neg(..) => ExprType::Unary,
-					Self::Add(..) | Self::Sub(..) => ExprType::Additive,
-					Self::Mul(..) | Self::DivDown(..) | Self::DivUp(..) => ExprType::Multiplicative,
+					Self::Num(..) | Self::Dice(..) => OpType::Value,
+					Self::Neg(..) => OpType::Unary,
+					Self::Add(..) | Self::Sub(..) => OpType::Additive,
+					Self::Mul(..) | Self::DivDown(..) | Self::DivUp(..) => OpType::Multiplicative,
 				}
 			}
 
-			#[must_use]
 			fn is_value(&self) -> bool {
 				matches!(self, Self::Num(..) | Self::Dice(..))
 			}
 
-			#[must_use]
 			fn is_unary(&self) -> bool {
 				matches!(self, Self::Neg(..))
 			}
 
-			#[must_use]
 			fn is_additive(&self) -> bool {
 				matches!(self, Self::Add(..) | Self::Sub(..))
 			}
 
-			#[must_use]
 			fn is_multiplicative(&self) -> bool {
 				matches!(self, Self::Mul(..) | Self::DivDown(..) | Self::DivUp(..))
 			}
 		}
-
-		impl DescribeBinaryExpr for $name {}
 	};
 }
 
 /// Individual elements of a full mathematical dice expression
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Expr {
 	/// Standalone integer
 	Num(i32),
@@ -71,32 +69,37 @@ pub enum Expr {
 	DivUp(Box<Self>, Box<Self>),
 }
 
-expr_type_impl!(Expr);
+op_type_impl!(Expr);
 
 impl Expr {
 	/// Evaluates the expression. For most types of expressions, this will directly result in a 1:1 equivalent
-	/// [`EvaledExpr`], with the notable exception of [`Expr::Dice`]. For dice expressions, the dice they contain are
-	/// rolled, resulting in an [`EvaledExpr::Dice`] with the [`Rolled`] set of dice.
-	pub fn eval(&self) -> Result<EvaledExpr, Error> {
+	/// [`Evaled`], with the notable exception of [`Expr::Dice`]. For dice expressions, the dice they contain are
+	/// rolled, resulting in an [`Evaled::Dice`] with the [`Rolled`] set of dice.
+	///
+	/// # Errors
+	/// If there is an integer overflow or division error encountered during any operations, or if an error occurs
+	/// during dice rolling, an error variant will be returned.
+	pub fn eval(&self) -> Result<Evaled, Error> {
 		Ok(match self {
-			Self::Num(x) => EvaledExpr::Num(*x),
-			Self::Dice(dice) => EvaledExpr::Dice(dice.roll()?),
+			Self::Num(x) => Evaled::Num(*x),
+			Self::Dice(dice) => Evaled::Dice(dice.roll()?),
 
-			Self::Neg(x) => EvaledExpr::Neg(Box::new(x.eval()?)),
+			Self::Neg(x) => Evaled::Neg(Box::new(x.eval()?)),
 
-			Self::Add(a, b) => EvaledExpr::Add(Box::new(a.eval()?), Box::new(b.eval()?)),
-			Self::Sub(a, b) => EvaledExpr::Sub(Box::new(a.eval()?), Box::new(b.eval()?)),
-			Self::Mul(a, b) => EvaledExpr::Mul(Box::new(a.eval()?), Box::new(b.eval()?)),
-			Self::DivDown(a, b) => EvaledExpr::DivDown(Box::new(a.eval()?), Box::new(b.eval()?)),
-			Self::DivUp(a, b) => EvaledExpr::DivUp(Box::new(a.eval()?), Box::new(b.eval()?)),
+			Self::Add(a, b) => Evaled::Add(Box::new(a.eval()?), Box::new(b.eval()?)),
+			Self::Sub(a, b) => Evaled::Sub(Box::new(a.eval()?), Box::new(b.eval()?)),
+			Self::Mul(a, b) => Evaled::Mul(Box::new(a.eval()?), Box::new(b.eval()?)),
+			Self::DivDown(a, b) => Evaled::DivDown(Box::new(a.eval()?), Box::new(b.eval()?)),
+			Self::DivUp(a, b) => Evaled::DivUp(Box::new(a.eval()?), Box::new(b.eval()?)),
 		})
 	}
 
 	/// Evaluates the expression, passing along a specific Rng to use for any random number generation.
 	/// See [`Self::eval()`] for more information.
-	pub fn eval_using_rng(&self, rng: &mut Rng) -> Result<EvaledExpr, Error> {
+	#[allow(clippy::missing_errors_doc)]
+	pub fn eval_using_rng(&self, rng: &mut Rng) -> Result<Evaled, Error> {
 		Ok(match self {
-			Self::Dice(dice) => EvaledExpr::Dice(dice.roll_using_rng(rng)?),
+			Self::Dice(dice) => Evaled::Dice(dice.roll_using_rng(rng)?),
 			_ => self.eval()?,
 		})
 	}
@@ -124,7 +127,6 @@ impl Describe for Expr {
 	///
 	/// `list_limit` does not affect the output of this implementation in any way since there are no possible lists of
 	/// elements included, so it is always safe to pass `None`.
-	#[inline]
 	fn describe(&self, _list_limit: Option<usize>) -> String {
 		match self {
 			Self::Num(x) => x.to_string(),
@@ -144,20 +146,21 @@ impl Describe for Expr {
 	}
 }
 
-impl std::fmt::Display for Expr {
+impl fmt::Display for Expr {
 	/// Formats the value using the given formatter. [Read more][core::fmt::Debug::fmt()]
 	///
 	/// The output of this implementation is equivalent to [`Self::describe(None)`].
 	///
 	/// [`Self::describe(None)`]: Self::describe()
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "{}", self.describe(None))
 	}
 }
 
 /// Individual elements of an evaluated mathematical dice expression
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EvaledExpr<'r> {
+#[non_exhaustive]
+pub enum Evaled<'r> {
 	/// Standalone integer
 	Num(i32),
 
@@ -183,16 +186,20 @@ pub enum EvaledExpr<'r> {
 	DivUp(Box<Self>, Box<Self>),
 }
 
-expr_type_impl!(EvaledExpr<'_>);
+op_type_impl!(Evaled<'_>);
 
-impl EvaledExpr<'_> {
+impl Evaled<'_> {
 	/// Calculates the final result of the evaluated expression and all of its children (if any).
+	///
+	/// # Errors
+	/// If there is an integer overflow or division error, or an error calculating the total of a set of dice rolls,an
+	/// error variant will be returned.
 	pub fn calc(&self) -> Result<i32, Error> {
 		match self {
 			Self::Num(x) => Ok(*x),
 			Self::Dice(roll) => Ok(roll.total()?.into()),
 
-			Self::Neg(x) => Ok(-x.calc()?),
+			Self::Neg(x) => Ok(x.calc()?.checked_neg().ok_or(Error::Overflow)?),
 
 			Self::Add(a, b) => a.calc()?.checked_add(b.calc()?).ok_or(Error::Overflow),
 			Self::Sub(a, b) => a.calc()?.checked_sub(b.calc()?).ok_or(Error::Overflow),
@@ -204,7 +211,7 @@ impl EvaledExpr<'_> {
 				let result = a_val.checked_div(b_val).ok_or(Error::Division)?;
 				let remainder = a_val.checked_rem(b_val).ok_or(Error::Division)?;
 				if remainder != 0 {
-					Ok(result + 1)
+					Ok(result.checked_add(1).ok_or(Error::Overflow)?)
 				} else {
 					Ok(result)
 				}
@@ -213,7 +220,7 @@ impl EvaledExpr<'_> {
 	}
 }
 
-impl Describe for EvaledExpr<'_> {
+impl Describe for Evaled<'_> {
 	fn describe(&self, list_limit: Option<usize>) -> String {
 		match self {
 			Self::Num(x) => x.to_string(),
@@ -233,19 +240,20 @@ impl Describe for EvaledExpr<'_> {
 	}
 }
 
-impl std::fmt::Display for EvaledExpr<'_> {
+impl fmt::Display for Evaled<'_> {
 	/// Formats the value using the given formatter. [Read more][core::fmt::Debug::fmt()]
 	///
 	/// The output of this implementation is equivalent to [`Self::describe(None)`].
 	///
 	/// [`Self::describe(None)`]: Self::describe()
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "{}", self.describe(None))
 	}
 }
 
-/// Error resulting from evaluating a [`Expr`] or calculating an [`EvaledExpr`]
+/// Error resulting from evaluating a [`Expr`] or calculating an [`Evaled`]
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
 pub enum Error {
 	/// Dice-related error (likely during rolling)
 	#[error("dice error: {0}")]
@@ -262,7 +270,8 @@ pub enum Error {
 
 /// Operation type for an individual expression
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExprType {
+#[allow(clippy::exhaustive_enums)]
+pub enum OpType {
 	/// Single value, no operation
 	Value,
 
@@ -276,10 +285,10 @@ pub enum ExprType {
 	Multiplicative,
 }
 
-/// Trait that offers [`ExprType`]-related information
-pub trait HasExprType {
+/// Trait that offers [`OpType`]-related information
+pub trait HasOpType {
 	/// Gets the type of this expression.
-	fn expr_type(&self) -> ExprType;
+	fn op_type(&self) -> OpType;
 
 	/// Checks whether this expression is a single value.
 	fn is_value(&self) -> bool;
@@ -305,12 +314,13 @@ pub trait Describe {
 	/// Builds a detailed expression string with additional information about non-deterministic elements.
 	/// Any elements of the expression that can have a different result between multiple evaluations or multiple results
 	/// should list all of the specific individual results that occurred (ideally, up to `list_limit` of them).
+	#[must_use]
 	fn describe(&self, list_limit: Option<usize>) -> String;
 }
 
 /// Trait for describing binary expressions with influence from own type.
-/// Used for, e.g. wrapping parentheses around parts of expressions based on [`ExprType`] of self and the expression.
-trait DescribeBinaryExpr: HasExprType + Describe {
+/// Used for, e.g. wrapping parentheses around parts of expressions based on [`OpType`] of self and the expression.
+trait DescribeBinaryExpr: HasOpType + Describe {
 	/// Builds a detailed description for a binary expression with parentheses added to disambiguate mixed
 	/// additive/multiplicative operations.
 	fn describe_binary_expr(
@@ -322,28 +332,27 @@ trait DescribeBinaryExpr: HasExprType + Describe {
 	) -> String {
 		format!(
 			"{} {} {}",
-			match (self.expr_type(), a.expr_type()) {
-				(ExprType::Additive, ExprType::Multiplicative)
-				| (ExprType::Multiplicative, ExprType::Additive)
-				| (ExprType::Unary, ExprType::Additive)
-				| (ExprType::Unary, ExprType::Multiplicative)
-				| (ExprType::Unary, ExprType::Unary) => paren_wrap(a.describe(list_limit)),
+			match (self.op_type(), a.op_type()) {
+				(OpType::Additive | OpType::Unary, OpType::Multiplicative)
+				| (OpType::Multiplicative | OpType::Unary, OpType::Additive)
+				| (OpType::Unary, OpType::Unary) => paren_wrap(a.describe(list_limit)),
 				_ => a.describe(list_limit),
 			},
 			op,
-			match (self.expr_type(), b.expr_type()) {
-				(ExprType::Additive, ExprType::Multiplicative)
-				| (ExprType::Multiplicative, ExprType::Additive)
-				| (ExprType::Unary, ExprType::Additive)
-				| (ExprType::Unary, ExprType::Multiplicative)
-				| (ExprType::Unary, ExprType::Unary) => paren_wrap(b.describe(list_limit)),
+			match (self.op_type(), b.op_type()) {
+				(OpType::Additive | OpType::Unary, OpType::Multiplicative)
+				| (OpType::Multiplicative | OpType::Unary, OpType::Additive)
+				| (OpType::Unary, OpType::Unary) => paren_wrap(b.describe(list_limit)),
 				_ => b.describe(list_limit),
 			}
 		)
 	}
 }
 
+impl<T: HasOpType + Describe> DescribeBinaryExpr for T {}
+
 /// Wraps a string in parentheses.
+#[must_use]
 fn paren_wrap(mut text: String) -> String {
 	text.insert(0, '(');
 	text.push(')');
