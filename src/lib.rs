@@ -18,7 +18,7 @@
 	clippy::arithmetic_side_effects,
 	clippy::clone_on_ref_ptr,
 	clippy::cognitive_complexity,
-	clippy::empty_enum_variants_with_brackets,
+	// clippy::empty_enum_variants_with_brackets, requires Rust 1.77
 	clippy::empty_structs_with_brackets,
 	clippy::exhaustive_enums,
 	clippy::exhaustive_structs,
