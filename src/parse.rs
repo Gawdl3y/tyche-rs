@@ -294,7 +294,7 @@ impl str::FromStr for Expr {
 }
 
 /// Trait to allow convenient access to a parser generator for any implementing type
-pub trait HasParser<T> {
+pub trait GenParser<T> {
 	/// Generates a parser for this type that expects end of input. Requires the `parse` feature (enabled by default).
 	#[must_use]
 	fn parser<'src>() -> impl Parser<'src, &'src str, T, extra::Err<Rich<'src, char>>> + Clone;
@@ -305,7 +305,7 @@ pub trait HasParser<T> {
 	fn part_parser<'src>() -> impl Parser<'src, &'src str, T, extra::Err<Rich<'src, char>>> + Clone;
 }
 
-impl HasParser<Dice> for Dice {
+impl GenParser<Dice> for Dice {
 	#[inline]
 	#[allow(refining_impl_trait)]
 	fn parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
@@ -319,7 +319,7 @@ impl HasParser<Dice> for Dice {
 	}
 }
 
-impl HasParser<Modifier> for Modifier {
+impl GenParser<Modifier> for Modifier {
 	#[inline]
 	#[allow(refining_impl_trait)]
 	fn parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
@@ -333,7 +333,7 @@ impl HasParser<Modifier> for Modifier {
 	}
 }
 
-impl HasParser<Condition> for Condition {
+impl GenParser<Condition> for Condition {
 	#[inline]
 	#[allow(refining_impl_trait)]
 	fn parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
@@ -347,7 +347,7 @@ impl HasParser<Condition> for Condition {
 	}
 }
 
-impl HasParser<Expr> for Expr {
+impl GenParser<Expr> for Expr {
 	#[inline]
 	fn parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Clone {
 		expr()
