@@ -285,9 +285,9 @@ pub enum Modifier {
 	/// let kh_mod = &dice.modifiers[0];
 	/// kh_mod.apply(&mut rolled)?;
 	///
+	/// // Final rolled dice set: 4d6kh[3 (d), 6, 1 (d), 2 (d)]
 	/// assert_eq!(
 	/// 	rolled,
-	/// 	// Final rolled dice set: 4d6kh[3 (d), 6, 1 (d), 2 (d)]
 	/// 	Rolled {
 	/// 		rolls: vec![
 	/// 			{
@@ -334,9 +334,9 @@ pub enum Modifier {
 	/// let kh2_mod = &dice.modifiers[0];
 	/// kh2_mod.apply(&mut rolled)?;
 	///
+	/// // Final rolled dice set: 4d6kh2[3, 6, 1 (d), 2 (d)]
 	/// assert_eq!(
 	/// 	rolled,
-	/// 	// Final rolled dice set: 4d6kh2[3, 6, 1 (d), 2 (d)]
 	/// 	Rolled {
 	/// 		rolls: vec![
 	/// 			DieRoll::new(3),
@@ -384,9 +384,9 @@ pub enum Modifier {
 	/// let kl_mod = &dice.modifiers[0];
 	/// kl_mod.apply(&mut rolled)?;
 	///
+	/// // Final rolled dice set: 4d6kl[3 (d), 6 (d), 1, 2 (d)]
 	/// assert_eq!(
 	/// 	rolled,
-	/// 	// Final rolled dice set: 4d6kl[3 (d), 6 (d), 1, 2 (d)]
 	/// 	Rolled {
 	/// 		rolls: vec![
 	/// 			{
@@ -433,9 +433,9 @@ pub enum Modifier {
 	/// let kl2_mod = &dice.modifiers[0];
 	/// kl2_mod.apply(&mut rolled)?;
 	///
+	/// // Final rolled dice set: 4d6kl2[3 (d), 6 (d), 1, 2]
 	/// assert_eq!(
 	/// 	rolled,
-	/// 	// Final rolled dice set: 4d6kl2[3 (d), 6 (d), 1, 2]
 	/// 	Rolled {
 	/// 		rolls: vec![
 	/// 			{
