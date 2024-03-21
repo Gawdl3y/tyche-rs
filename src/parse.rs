@@ -123,6 +123,26 @@ pub fn modifier_part<'src>() -> impl Parser<'src, &'src str, Modifier, extra::Er
 					.map_err(|err| Rich::custom(span, format!("Keep highest count: {err}")))?;
 				Ok(Modifier::KeepHigh(count))
 			}),
+		// Min (e.g. min3)
+		just("min")
+			.ignored()
+			.then(text::int(10))
+			.try_map(|((), min): ((), &str), span| {
+				let min = min
+					.parse()
+					.map_err(|err| Rich::custom(span, format!("Minimum: {err}")))?;
+				Ok(Modifier::Min(min))
+			}),
+		// Max (e.g. max4)
+		just("max")
+			.ignored()
+			.then(text::int(10))
+			.try_map(|((), max): ((), &str), span| {
+				let max = max
+					.parse()
+					.map_err(|err| Rich::custom(span, format!("Maximum: {err}")))?;
+				Ok(Modifier::Max(max))
+			}),
 	))
 }
 

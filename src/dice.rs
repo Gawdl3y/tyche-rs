@@ -457,13 +457,111 @@ pub enum Modifier {
 	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	KeepLow(u8),
+
+	/// Replaces values of rolls lower than a minimum with the minimum.
+	///
+	/// # Examples
+	/// ```
+	/// use dicey::dice::{Dice, DieRoll, Rolled, ValChange};
+	///
+	/// // Dice set: 4d6min3
+	/// let dice = Dice::builder()
+	/// 	.count(4)
+	/// 	.sides(6)
+	/// 	.min(3)
+	/// 	.build();
+	/// // Rolled dice set (before applying modifier): 4d6min3[3, 6, 1, 2]
+	/// let mut rolled = Rolled {
+	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
+	/// 	dice: &dice,
+	/// };
+	///
+	/// // Could also use a `Modifier::Min(3)` directly rather than getting the modifier from the dice,
+	/// // but that wouldn't maintain the reference to the dice's modifier (like how [`Dice::roll()`] does)
+	/// let min_mod = &dice.modifiers[0];
+	/// min_mod.apply(&mut rolled)?;
+	///
+	/// // Final rolled dice set: 4d6min3[3, 6, 3 (m), 3 (m)]
+	/// assert_eq!(
+	/// 	rolled,
+	/// 	Rolled {
+	/// 		rolls: vec![
+	/// 			DieRoll::new(3),
+	/// 			DieRoll::new(6),
+	/// 			{
+	/// 				let mut roll = DieRoll::new(3);
+	/// 				roll.changes.push(ValChange {
+	/// 					before: 1,
+	/// 					after: 3,
+	/// 					cause: min_mod,
+	/// 				});
+	/// 				roll
+	/// 			},
+	/// 			{
+	/// 				let mut roll = DieRoll::new(3);
+	/// 				roll.changes.push(ValChange {
+	/// 					before: 2,
+	/// 					after: 3,
+	/// 					cause: min_mod,
+	/// 				});
+	/// 				roll
+	/// 			},
+	/// 		],
+	/// 		dice: &dice,
+	/// 	}
+	/// );
+	/// # Ok::<(), dicey::dice::Error>(())
+	/// ```
+	Min(u8),
+
+	/// Replaces values of rolls higher than a maximum with the maximum.
+	///
+	/// # Examples
+	/// ```
+	/// use dicey::dice::{Dice, DieRoll, Rolled, ValChange};
+	///
+	/// // Dice set: 4d6max3
+	/// let dice = Dice::builder()
+	/// 	.count(4)
+	/// 	.sides(6)
+	/// 	.max(3)
+	/// 	.build();
+	/// // Rolled dice set (before applying modifier): 4d6max3[3, 6, 1, 2]
+	/// let mut rolled = Rolled {
+	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
+	/// 	dice: &dice,
+	/// };
+	///
+	/// // Could also use a `Modifier::Max(3)` directly rather than getting the modifier from the dice,
+	/// // but that wouldn't maintain the reference to the dice's modifier (like how [`Dice::roll()`] does)
+	/// let max_mod = &dice.modifiers[0];
+	/// max_mod.apply(&mut rolled)?;
+	///
+	/// // Final rolled dice set: 4d6max3[3, 3 (m), 1, 2]
+	/// assert_eq!(
+	/// 	rolled,
+	/// 	Rolled {
+	/// 		rolls: vec![
+	/// 			DieRoll::new(3),
+	/// 			{
+	/// 				let mut roll = DieRoll::new(3);
+	/// 				roll.changes.push(ValChange {
+	/// 					before: 6,
+	/// 					after: 3,
+	/// 					cause: max_mod,
+	/// 				});
+	/// 				roll
+	/// 			},
+	/// 			DieRoll::new(1),
+	/// 			DieRoll::new(2),
+	/// 		],
+	/// 		dice: &dice,
+	/// 	}
+	/// );
+	/// # Ok::<(), dicey::dice::Error>(())
+	/// ```
+	Max(u8),
 	//
-	// /// Replace all dice lower than a given minimum value with the minimum
-	// Min(u8),
-
-	// /// Replace all dice higher than a given maximum value with the maximum
-	// Max(u8),
-
 	// /// Count the number of dice that meet or don't meet (second parameter `true` for meets, `false` for does not meet)
 	// /// the given condition.
 	// CountCond(Condition, bool),
@@ -501,6 +599,8 @@ impl Modifier {
 			Self::Explode { cond, recurse } => self.apply_explode(rolled, rng, cond, *recurse)?,
 			Self::KeepHigh(count) => self.apply_keep_high(rolled, *count),
 			Self::KeepLow(count) => self.apply_keep_low(rolled, *count),
+			Self::Min(min) => self.apply_min(rolled, *min),
+			Self::Max(max) => self.apply_max(rolled, *max),
 		};
 
 		Ok(())
@@ -666,6 +766,38 @@ impl Modifier {
 		refs.sort();
 		refs.iter_mut().skip(count as usize).for_each(|roll| roll.drop(self));
 	}
+
+	/// Applies the [`Self::Min`] variant to a set of rolled dice.
+	fn apply_min<'r, 'm: 'r>(&'m self, rolled: &mut Rolled<'r>, min: u8) {
+		rolled
+			.rolls
+			.iter_mut()
+			.filter(|roll| !roll.is_dropped() && roll.val < min)
+			.for_each(|roll| {
+				roll.changes.push(ValChange {
+					before: roll.val,
+					after: min,
+					cause: self,
+				});
+				roll.val = min;
+			});
+	}
+
+	/// Applies the [`Self::Max`] variant to a set of rolled dice.
+	fn apply_max<'r, 'm: 'r>(&'m self, rolled: &mut Rolled<'r>, max: u8) {
+		rolled
+			.rolls
+			.iter_mut()
+			.filter(|roll| !roll.is_dropped() && roll.val > max)
+			.for_each(|roll| {
+				roll.changes.push(ValChange {
+					before: roll.val,
+					after: max,
+					cause: self,
+				});
+				roll.val = max;
+			});
+	}
 }
 
 impl fmt::Display for Modifier {
@@ -678,10 +810,16 @@ impl fmt::Display for Modifier {
 				Self::Explode { recurse, .. } => format!("x{}", recurse.then_some("").unwrap_or("o")),
 				Self::KeepHigh(count) => format!("kh{}", if *count > 1 { count.to_string() } else { String::new() }),
 				Self::KeepLow(count) => format!("kl{}", if *count > 1 { count.to_string() } else { String::new() }),
+				Self::Min(min) => format!("min{min}"),
+				Self::Max(max) => format!("max{max}"),
 			},
 			match self {
 				Self::Reroll { cond, .. } | Self::Explode { cond: Some(cond), .. } => cond.to_string(),
-				Self::Explode { cond: None, .. } | Self::KeepHigh(..) | Self::KeepLow(..) => String::new(),
+				Self::Explode { cond: None, .. }
+				| Self::KeepHigh(..)
+				| Self::KeepLow(..)
+				| Self::Max(..)
+				| Self::Min(..) => String::new(),
 			}
 		)
 	}
@@ -777,6 +915,9 @@ pub struct DieRoll<'m> {
 
 	/// Modifier that caused the drop of this die, if any
 	pub dropped_by: Option<&'m Modifier>,
+
+	/// Modifications that were made to the value of the roll
+	pub changes: Vec<ValChange<'m>>,
 }
 
 impl<'m> DieRoll<'m> {
@@ -818,6 +959,13 @@ impl<'m> DieRoll<'m> {
 		self.dropped_by.is_some()
 	}
 
+	/// Indicates whether this die roll's value has been directly changed by a modifier.
+	#[must_use]
+	#[inline]
+	pub fn is_changed(&self) -> bool {
+		!self.changes.is_empty()
+	}
+
 	/// Creates a new die roll with the given value.
 	#[must_use]
 	pub const fn new(val: u8) -> Self {
@@ -825,6 +973,7 @@ impl<'m> DieRoll<'m> {
 			val,
 			added_by: None,
 			dropped_by: None,
+			changes: Vec::new(),
 		}
 	}
 
@@ -877,8 +1026,28 @@ impl fmt::Display for DieRoll<'_> {
 	/// assert_eq!(roll.to_string(), "16 (d)");
 	/// ```
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "{}{}", self.val, if self.is_dropped() { " (d)" } else { "" })
+		write!(
+			f,
+			"{}{}{}",
+			self.val,
+			if self.is_changed() { " (m)" } else { "" },
+			if self.is_dropped() { " (d)" } else { "" }
+		)
 	}
+}
+
+/// Details about a modification made to a [`DieRoll`] as a result of a [`Modifier`] being applied to it
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::exhaustive_structs)]
+pub struct ValChange<'m> {
+	/// Roll value before the change was made
+	pub before: u8,
+
+	/// Roll value after the change was made
+	pub after: u8,
+
+	/// Modifier that caused the change
+	pub cause: &'m Modifier,
 }
 
 /// Representation of the result from rolling [`Dice`]
@@ -1122,6 +1291,20 @@ impl Builder {
 	#[must_use]
 	pub fn keep_low(mut self, count: u8) -> Self {
 		self.0.modifiers.push(Modifier::KeepLow(count));
+		self
+	}
+
+	/// Adds a minimum modifier to the dice.
+	#[must_use]
+	pub fn min(mut self, min: u8) -> Self {
+		self.0.modifiers.push(Modifier::Min(min));
+		self
+	}
+
+	/// Adds a maximum modifier to the dice.
+	#[must_use]
+	pub fn max(mut self, max: u8) -> Self {
+		self.0.modifiers.push(Modifier::Max(max));
 		self
 	}
 
