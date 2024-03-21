@@ -13,15 +13,16 @@
 //! ```
 //! use dicey::dice::Dice;
 //!
-//! let dice: Dice = "6d8x".parse().expect("unable to parse dice");
+//! let dice: Dice = "6d8x".parse()?;
 //! assert_eq!(dice, Dice::builder().count(6).sides(8).explode(None, true).build());
+//! # Ok::<(), dicey::parse::Error>(())
 //! ```
 //!
 //! ## Parsing expressions
 //! ```
 //! use dicey::{dice::Dice, expr::Expr};
 //!
-//! let expr: Expr = "6d8x + 4d6 - 3".parse().expect("unable to parse expression");
+//! let expr: Expr = "6d8x + 4d6 - 3".parse()?;
 //! assert_eq!(
 //! 	expr,
 //! 	Expr::Sub(
@@ -34,6 +35,7 @@
 //! 		Box::new(Expr::Num(3)),
 //! 	)
 //! );
+//! # Ok::<(), dicey::parse::Error>(())
 //! ```
 
 use std::{fmt, str};
