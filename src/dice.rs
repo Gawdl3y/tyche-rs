@@ -129,19 +129,24 @@ pub enum Modifier {
 	/// ```
 	/// use dicey::dice::{Condition, Dice, DieRoll, Rolled};
 	///
+	/// // Dice set: 4d6rr
 	/// let dice = Dice::builder()
 	/// 	.count(4)
 	/// 	.sides(6)
-	/// 	.reroll(Condition::Eq(1), false)
+	/// 	.reroll(Condition::Eq(1), true)
 	/// 	.build();
+	/// // Rolled dice set (before applying modifier): 4d6rr[3, 6, 1, 2]
 	/// let mut rolled = Rolled {
 	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
 	/// 	dice: &dice,
 	/// };
 	///
+	/// // Could also use a `Modifier::Reroll` directly rather than getting the modifier from the dice,
+	/// // but that wouldn't maintain the reference to the dice's modifier (like how [`Dice::roll()`] does)
 	/// let rr_mod = &dice.modifiers[0];
 	/// rr_mod.apply(&mut rolled)?;
 	///
+	/// // Final rolled dice set: 4d6rr[3, 6, 1, 2, x...]
 	/// assert!(rolled.rolls.len() > 4);
 	/// assert_eq!(rolled.rolls[2].dropped_by, Some(rr_mod));
 	/// rolled.rolls.iter().skip(4).for_each(|roll| assert_eq!(roll.added_by, Some(rr_mod)));
@@ -158,19 +163,24 @@ pub enum Modifier {
 	/// ```
 	/// use dicey::dice::{Condition, Dice, DieRoll, Rolled};
 	///
+	/// // Dice set: 4d6r
 	/// let dice = Dice::builder()
 	/// 	.count(4)
 	/// 	.sides(6)
 	/// 	.reroll(Condition::Eq(1), false)
 	/// 	.build();
+	/// // Rolled dice set (before applying modifier): 4d6r[3, 6, 1, 2]
 	/// let mut rolled = Rolled {
 	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
 	/// 	dice: &dice,
 	/// };
 	///
+	/// // Could also use a `Modifier::Reroll` directly rather than getting the modifier from the dice,
+	/// // but that wouldn't maintain the reference to the dice's modifier (like how [`Dice::roll()`] does)
 	/// let r_mod = &dice.modifiers[0];
 	/// r_mod.apply(&mut rolled)?;
 	///
+	/// // Final rolled dice set: 4d6r[3, 6, 1, 2, x]
 	/// assert_eq!(rolled.rolls.len(), 5);
 	/// assert_eq!(rolled.rolls[2].dropped_by, Some(r_mod));
 	/// assert_eq!(rolled.rolls[4].added_by, Some(r_mod));
@@ -192,19 +202,24 @@ pub enum Modifier {
 	/// ```
 	/// use dicey::dice::{Dice, DieRoll, Rolled};
 	///
+	/// // Dice set: 4d6x
 	/// let dice = Dice::builder()
 	/// 	.count(4)
 	/// 	.sides(6)
 	/// 	.explode(None, true)
 	/// 	.build();
+	/// // Rolled dice set (before applying modifier): 4d6x[3, 6, 1, 2]
 	/// let mut rolled = Rolled {
 	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
 	/// 	dice: &dice,
 	/// };
 	///
+	/// // Could also use a `Modifier::Explode` directly rather than getting the modifier from the dice,
+	/// // but that wouldn't maintain the reference to the dice's modifier (like how [`Dice::roll()`] does)
 	/// let x_mod = &dice.modifiers[0];
 	/// x_mod.apply(&mut rolled)?;
 	///
+	/// // Final rolled dice set: 4d6xo[3, 6, 1, 2, x...]
 	/// assert!(rolled.rolls.len() > 4);
 	/// rolled.rolls.iter().skip(4).for_each(|roll| assert_eq!(roll.added_by, Some(x_mod)));
 	/// # Ok::<(), dicey::dice::Error>(())
@@ -214,19 +229,24 @@ pub enum Modifier {
 	/// ```
 	/// use dicey::dice::{Dice, DieRoll, Rolled};
 	///
+	/// // Dice set: 4d6xo
 	/// let dice = Dice::builder()
 	/// 	.count(4)
 	/// 	.sides(6)
 	/// 	.explode(None, false)
 	/// 	.build();
+	/// // Rolled dice set (before applying modifier): 4d6xo[3, 6, 1, 2]
 	/// let mut rolled = Rolled {
 	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
 	/// 	dice: &dice,
 	/// };
 	///
+	/// // Could also use a `Modifier::Explode` directly rather than getting the modifier from the dice,
+	/// // but that wouldn't maintain the reference to the dice's modifier (like how [`Dice::roll()`] does)
 	/// let xo_mod = &dice.modifiers[0];
 	/// xo_mod.apply(&mut rolled)?;
 	///
+	/// // Final rolled dice set: 4d6xo[3, 6, 1, 2, x]
 	/// assert_eq!(rolled.rolls.len(), 5);
 	/// assert_eq!(rolled.rolls[4].added_by, Some(xo_mod));
 	/// # Ok::<(), dicey::dice::Error>(())
@@ -248,21 +268,26 @@ pub enum Modifier {
 	/// ```
 	/// use dicey::dice::{Dice, DieRoll, Rolled};
 	///
+	/// // Dice set: 4d6kh
 	/// let dice = Dice::builder()
 	/// 	.count(4)
 	/// 	.sides(6)
 	/// 	.keep_high(1)
 	/// 	.build();
+	/// // Rolled dice set (before applying modifier): 4d6kh[3, 6, 1, 2]
 	/// let mut rolled = Rolled {
 	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
 	/// 	dice: &dice,
 	/// };
 	///
+	/// // Could also use a `Modifier::KeepHigh(1)` directly rather than getting the modifier from the dice,
+	/// // but that wouldn't maintain the reference to the dice's modifier (like how [`Dice::roll()`] does)
 	/// let kh_mod = &dice.modifiers[0];
 	/// kh_mod.apply(&mut rolled)?;
 	///
 	/// assert_eq!(
 	/// 	rolled,
+	/// 	// Final rolled dice set: 4d6kh[3 (d), 6, 1 (d), 2 (d)]
 	/// 	Rolled {
 	/// 		rolls: vec![
 	/// 			{
@@ -292,21 +317,26 @@ pub enum Modifier {
 	/// ```
 	/// use dicey::dice::{Dice, DieRoll, Rolled};
 	///
+	/// // Dice set: 4d6kh2
 	/// let dice = Dice::builder()
 	/// 	.count(4)
 	/// 	.sides(6)
 	/// 	.keep_high(2)
 	/// 	.build();
+	/// // Rolled dice set (before applying modifier): 4d6kh2[3, 6, 1, 2]
 	/// let mut rolled = Rolled {
 	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
 	/// 	dice: &dice,
 	/// };
 	///
+	/// // Could also use a `Modifier::KeepHigh(2)` directly rather than getting the modifier from the dice,
+	/// // but that wouldn't maintain the reference to the dice's modifier (like how [`Dice::roll()`] does)
 	/// let kh2_mod = &dice.modifiers[0];
 	/// kh2_mod.apply(&mut rolled)?;
 	///
 	/// assert_eq!(
 	/// 	rolled,
+	/// 	// Final rolled dice set: 4d6kh2[3, 6, 1 (d), 2 (d)]
 	/// 	Rolled {
 	/// 		rolls: vec![
 	/// 			DieRoll::new(3),
@@ -337,21 +367,26 @@ pub enum Modifier {
 	/// ```
 	/// use dicey::dice::{Dice, DieRoll, Rolled};
 	///
+	/// // Dice set: 4d6kl
 	/// let dice = Dice::builder()
 	/// 	.count(4)
 	/// 	.sides(6)
 	/// 	.keep_low(1)
 	/// 	.build();
+	/// // Rolled dice set (before applying modifier): 4d6kl[3, 6, 1, 2]
 	/// let mut rolled = Rolled {
 	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
 	/// 	dice: &dice,
 	/// };
 	///
+	/// // Could also use a `Modifier::KeepLow(1)` directly rather than getting the modifier from the dice,
+	/// // but that wouldn't maintain the reference to the dice's modifier (like how [`Dice::roll()`] does)
 	/// let kl_mod = &dice.modifiers[0];
 	/// kl_mod.apply(&mut rolled)?;
 	///
 	/// assert_eq!(
 	/// 	rolled,
+	/// 	// Final rolled dice set: 4d6kl[3 (d), 6 (d), 1, 2 (d)]
 	/// 	Rolled {
 	/// 		rolls: vec![
 	/// 			{
@@ -381,21 +416,26 @@ pub enum Modifier {
 	/// ```
 	/// use dicey::dice::{Dice, DieRoll, Rolled};
 	///
+	/// // Dice set: 4d6kl2
 	/// let dice = Dice::builder()
 	/// 	.count(4)
 	/// 	.sides(6)
 	/// 	.keep_low(2)
 	/// 	.build();
+	/// // Rolled dice set (before applying modifier): 4d6kl2[3, 6, 1, 2]
 	/// let mut rolled = Rolled {
 	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
 	/// 	dice: &dice,
 	/// };
 	///
+	/// // Could also use a `Modifier::KeepLow(2)` directly rather than getting the modifier from the dice,
+	/// // but that wouldn't maintain the reference to the dice's modifier (like how [`Dice::roll()`] does)
 	/// let kl2_mod = &dice.modifiers[0];
 	/// kl2_mod.apply(&mut rolled)?;
 	///
 	/// assert_eq!(
 	/// 	rolled,
+	/// 	// Final rolled dice set: 4d6kl2[3 (d), 6 (d), 1, 2]
 	/// 	Rolled {
 	/// 		rolls: vec![
 	/// 			{
