@@ -244,7 +244,7 @@ pub enum Modifier {
 	///
 	/// # Examples
 	///
-	/// # Keep highest die (`kh`)
+	/// ## Keep highest die (`kh`)
 	/// ```
 	/// use dicey::dice::{Dice, DieRoll, Rolled};
 	///
@@ -288,7 +288,7 @@ pub enum Modifier {
 	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	///
-	/// # Keep highest 2 dice (`kh2`)
+	/// ## Keep highest 2 dice (`kh2`)
 	/// ```
 	/// use dicey::dice::{Dice, DieRoll, Rolled};
 	///
@@ -333,7 +333,7 @@ pub enum Modifier {
 	///
 	/// # Examples
 	///
-	/// # Keep lowest die (`kl`)
+	/// ## Keep lowest die (`kl`)
 	/// ```
 	/// use dicey::dice::{Dice, DieRoll, Rolled};
 	///
@@ -377,7 +377,7 @@ pub enum Modifier {
 	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	///
-	/// # Keep lowest 2 dice (`kl2`)
+	/// ## Keep lowest 2 dice (`kl2`)
 	/// ```
 	/// use dicey::dice::{Dice, DieRoll, Rolled};
 	///
