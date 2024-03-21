@@ -2,7 +2,7 @@
 //!
 //! This is the home of the dice "primitives". For using as part of a larger expression, see [`Expr::dice`].
 //!
-//! [`Expr::dice`]: ../expr/enum.Expr.html#variant.Dice
+//! [`Expr::dice`]: crate::expr::Expr::Dice
 
 use std::{cmp, fmt};
 
@@ -21,7 +21,7 @@ pub struct Dice {
 	/// Number of sides for each die
 	pub sides: u8,
 
-	/// Modifiers to apply to rolls from this set of dice
+	/// Modifiers to automatically apply to rolls from this set of dice
 	pub modifiers: Vec<Modifier>,
 }
 
@@ -121,7 +121,61 @@ impl fmt::Display for Dice {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Modifier {
-	/// Rerolls (drops original and adds a newly-rolled die) dice that meet a condition
+	/// Rerolls (drops original and adds a newly-rolled die) dice that meet a condition.
+	///
+	/// # Examples
+	///
+	/// ## Reroll recursively (`rr`)
+	/// ```
+	/// use dicey::dice::{Condition, Dice, DieRoll, Rolled};
+	///
+	/// let dice = Dice::builder()
+	/// 	.count(4)
+	/// 	.sides(6)
+	/// 	.reroll(Condition::Eq(1), false)
+	/// 	.build();
+	/// let mut rolled = Rolled {
+	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
+	/// 	dice: &dice,
+	/// };
+	///
+	/// let rr_mod = &dice.modifiers[0];
+	/// rr_mod.apply(&mut rolled)?;
+	///
+	/// assert!(rolled.rolls.len() > 4);
+	/// assert_eq!(rolled.rolls[2].dropped_by, Some(rr_mod));
+	/// rolled.rolls.iter().skip(4).for_each(|roll| assert_eq!(roll.added_by, Some(rr_mod)));
+	/// rolled
+	/// 	.rolls
+	/// 	.iter()
+	/// 	.skip(4)
+	/// 	.take(rolled.rolls.len() - 5)
+	/// 	.for_each(|roll| assert_eq!(roll.dropped_by, Some(rr_mod)));
+	/// # Ok::<(), dicey::dice::Error>(())
+	/// ```
+	///
+	/// ## Reroll once (`r`)
+	/// ```
+	/// use dicey::dice::{Condition, Dice, DieRoll, Rolled};
+	///
+	/// let dice = Dice::builder()
+	/// 	.count(4)
+	/// 	.sides(6)
+	/// 	.reroll(Condition::Eq(1), false)
+	/// 	.build();
+	/// let mut rolled = Rolled {
+	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
+	/// 	dice: &dice,
+	/// };
+	///
+	/// let r_mod = &dice.modifiers[0];
+	/// r_mod.apply(&mut rolled)?;
+	///
+	/// assert_eq!(rolled.rolls.len(), 5);
+	/// assert_eq!(rolled.rolls[2].dropped_by, Some(r_mod));
+	/// assert_eq!(rolled.rolls[4].added_by, Some(r_mod));
+	/// # Ok::<(), dicey::dice::Error>(())
+	/// ```
 	Reroll {
 		/// Condition that rolls must pass in order to be rerolled
 		cond: Condition,
@@ -130,7 +184,53 @@ pub enum Modifier {
 		recurse: bool,
 	},
 
-	/// Explodes (keeps original and adds an additional newly-rolled die) dice that meet a condition
+	/// Explodes (keeps original and adds an additional newly-rolled die) dice that meet a condition.
+	///
+	/// # Examples
+	///
+	/// ## Explode recursively (`x`)
+	/// ```
+	/// use dicey::dice::{Dice, DieRoll, Rolled};
+	///
+	/// let dice = Dice::builder()
+	/// 	.count(4)
+	/// 	.sides(6)
+	/// 	.explode(None, true)
+	/// 	.build();
+	/// let mut rolled = Rolled {
+	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
+	/// 	dice: &dice,
+	/// };
+	///
+	/// let x_mod = &dice.modifiers[0];
+	/// x_mod.apply(&mut rolled)?;
+	///
+	/// assert!(rolled.rolls.len() > 4);
+	/// rolled.rolls.iter().skip(4).for_each(|roll| assert_eq!(roll.added_by, Some(x_mod)));
+	/// # Ok::<(), dicey::dice::Error>(())
+	/// ```
+	///
+	/// ## Explode once (`xo`)
+	/// ```
+	/// use dicey::dice::{Dice, DieRoll, Rolled};
+	///
+	/// let dice = Dice::builder()
+	/// 	.count(4)
+	/// 	.sides(6)
+	/// 	.explode(None, false)
+	/// 	.build();
+	/// let mut rolled = Rolled {
+	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
+	/// 	dice: &dice,
+	/// };
+	///
+	/// let xo_mod = &dice.modifiers[0];
+	/// xo_mod.apply(&mut rolled)?;
+	///
+	/// assert_eq!(rolled.rolls.len(), 5);
+	/// assert_eq!(rolled.rolls[4].added_by, Some(xo_mod));
+	/// # Ok::<(), dicey::dice::Error>(())
+	/// ```
 	Explode {
 		/// Condition that rolls must pass in order to explode.
 		/// If `None`, the roll values must be equal to the number of sides of the dice being rolled.
@@ -140,10 +240,182 @@ pub enum Modifier {
 		recurse: bool,
 	},
 
-	/// Keeps only the highest x dice, dropping the rest
+	/// Keeps only the highest x dice, dropping the rest.
+	///
+	/// # Examples
+	///
+	/// # Keep highest die (`kh`)
+	/// ```
+	/// use dicey::dice::{Dice, DieRoll, Rolled};
+	///
+	/// let dice = Dice::builder()
+	/// 	.count(4)
+	/// 	.sides(6)
+	/// 	.keep_high(1)
+	/// 	.build();
+	/// let mut rolled = Rolled {
+	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
+	/// 	dice: &dice,
+	/// };
+	///
+	/// let kh_mod = &dice.modifiers[0];
+	/// kh_mod.apply(&mut rolled)?;
+	///
+	/// assert_eq!(
+	/// 	rolled,
+	/// 	Rolled {
+	/// 		rolls: vec![
+	/// 			{
+	/// 				let mut roll = DieRoll::new(3);
+	/// 				roll.drop(kh_mod);
+	/// 				roll
+	/// 			},
+	/// 			DieRoll::new(6),
+	/// 			{
+	/// 				let mut roll = DieRoll::new(1);
+	/// 				roll.drop(kh_mod);
+	/// 				roll
+	/// 			},
+	/// 			{
+	/// 				let mut roll = DieRoll::new(2);
+	/// 				roll.drop(kh_mod);
+	/// 				roll
+	/// 			},
+	/// 		],
+	/// 		dice: &dice,
+	/// 	}
+	/// );
+	/// # Ok::<(), dicey::dice::Error>(())
+	/// ```
+	///
+	/// # Keep highest 2 dice (`kh2`)
+	/// ```
+	/// use dicey::dice::{Dice, DieRoll, Rolled};
+	///
+	/// let dice = Dice::builder()
+	/// 	.count(4)
+	/// 	.sides(6)
+	/// 	.keep_high(2)
+	/// 	.build();
+	/// let mut rolled = Rolled {
+	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
+	/// 	dice: &dice,
+	/// };
+	///
+	/// let kh2_mod = &dice.modifiers[0];
+	/// kh2_mod.apply(&mut rolled)?;
+	///
+	/// assert_eq!(
+	/// 	rolled,
+	/// 	Rolled {
+	/// 		rolls: vec![
+	/// 			DieRoll::new(3),
+	/// 			DieRoll::new(6),
+	/// 			{
+	/// 				let mut roll = DieRoll::new(1);
+	/// 				roll.drop(kh2_mod);
+	/// 				roll
+	/// 			},
+	/// 			{
+	/// 				let mut roll = DieRoll::new(2);
+	/// 				roll.drop(kh2_mod);
+	/// 				roll
+	/// 			},
+	/// 		],
+	/// 		dice: &dice,
+	/// 	}
+	/// );
+	/// # Ok::<(), dicey::dice::Error>(())
+	/// ```
 	KeepHigh(u8),
 
-	/// Keeps only the lowest x dice, dropping the rest
+	/// Keeps only the lowest x dice, dropping the rest.
+	///
+	/// # Examples
+	///
+	/// # Keep lowest die (`kl`)
+	/// ```
+	/// use dicey::dice::{Dice, DieRoll, Rolled};
+	///
+	/// let dice = Dice::builder()
+	/// 	.count(4)
+	/// 	.sides(6)
+	/// 	.keep_low(1)
+	/// 	.build();
+	/// let mut rolled = Rolled {
+	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
+	/// 	dice: &dice,
+	/// };
+	///
+	/// let kl_mod = &dice.modifiers[0];
+	/// kl_mod.apply(&mut rolled)?;
+	///
+	/// assert_eq!(
+	/// 	rolled,
+	/// 	Rolled {
+	/// 		rolls: vec![
+	/// 			{
+	/// 				let mut roll = DieRoll::new(3);
+	/// 				roll.drop(kl_mod);
+	/// 				roll
+	/// 			},
+	/// 			{
+	/// 				let mut roll = DieRoll::new(6);
+	/// 				roll.drop(kl_mod);
+	/// 				roll
+	/// 			},
+	/// 			DieRoll::new(1),
+	/// 			{
+	/// 				let mut roll = DieRoll::new(2);
+	/// 				roll.drop(kl_mod);
+	/// 				roll
+	/// 			},
+	/// 		],
+	/// 		dice: &dice,
+	/// 	}
+	/// );
+	/// # Ok::<(), dicey::dice::Error>(())
+	/// ```
+	///
+	/// # Keep lowest 2 dice (`kl2`)
+	/// ```
+	/// use dicey::dice::{Dice, DieRoll, Rolled};
+	///
+	/// let dice = Dice::builder()
+	/// 	.count(4)
+	/// 	.sides(6)
+	/// 	.keep_low(2)
+	/// 	.build();
+	/// let mut rolled = Rolled {
+	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
+	/// 	dice: &dice,
+	/// };
+	///
+	/// let kl2_mod = &dice.modifiers[0];
+	/// kl2_mod.apply(&mut rolled)?;
+	///
+	/// assert_eq!(
+	/// 	rolled,
+	/// 	Rolled {
+	/// 		rolls: vec![
+	/// 			{
+	/// 				let mut roll = DieRoll::new(3);
+	/// 				roll.drop(kl2_mod);
+	/// 				roll
+	/// 			},
+	/// 			{
+	/// 				let mut roll = DieRoll::new(6);
+	/// 				roll.drop(kl2_mod);
+	/// 				roll
+	/// 			},
+	/// 			DieRoll::new(1),
+	/// 			DieRoll::new(2),
+	/// 		],
+	/// 		dice: &dice,
+	/// 	}
+	/// );
+	/// # Ok::<(), dicey::dice::Error>(())
+	/// ```
 	KeepLow(u8),
 	//
 	// /// Replace all dice lower than a given minimum value with the minimum
@@ -583,9 +855,10 @@ impl Rolled<'_> {
 	/// use dicey::dice::Dice;
 	///
 	/// let dice = Dice::new(4, 8);
-	/// let rolled = dice.roll().expect("error rolling dice");
-	/// let total = rolled.total().expect("error totalling rolls");
+	/// let rolled = dice.roll()?;
+	/// let total = rolled.total()?;
 	/// assert_eq!(total, rolled.rolls.iter().map(|roll| roll.val as u16).sum());
+	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	pub fn total(&self) -> Result<u16, Error> {
 		let mut sum: u16 = 0;
@@ -611,7 +884,7 @@ impl Describe for Rolled<'_> {
 	/// use dicey::{dice::{Dice, DieRoll, Rolled}, expr::Describe};
 	///
 	/// let dice = Dice::builder().count(4).sides(6).keep_high(2).build();
-	/// let kh_mod = dice.modifiers.first().expect("no first modifier");
+	/// let kh_mod = &dice.modifiers[0];
 	/// let rolled = Rolled {
 	/// 	rolls: vec![
 	/// 		DieRoll::new(6),
