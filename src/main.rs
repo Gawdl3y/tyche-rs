@@ -1,7 +1,10 @@
 #[cfg(feature = "parse")]
 fn main() {
-	use std::env;
-	use std::io::{self, Write};
+	use std::{
+		env,
+		io::{self, Write},
+		process::exit,
+	};
 
 	use chumsky::Parser;
 
@@ -25,34 +28,38 @@ fn main() {
 
 	println!("\x1b[1m\x1b[36mInput:\x1b[0m {}", input);
 
-	match dicey::parser().parse(&input).into_result() {
-		Ok(ast) => {
-			println!("\x1b[1m\x1b[36mParsed:\x1b[0m {:#?}", ast);
-			println!("\x1b[1m\x1b[36mDeterministic:\x1b[0m {}", ast.is_deterministic());
-
-			match ast.eval() {
-				Ok(evaled) => {
-					println!("\x1b[1m\x1b[36mEvaluated:\x1b[0m {:#?}", evaled);
-					println!("\x1b[1m\x1b[36mDescribed:\x1b[0m {}", evaled);
-					println!(
-						"\x1b[1m\x1b[36mTotal:\x1b[0m {}",
-						evaled
-							.calc()
-							.map(|total| total.to_string())
-							.or_else(|err| Ok::<_, dicey::expr::Error>(err.to_string()))
-							.unwrap()
-					);
-				}
-				Err(eval_err) => eprintln!("\x1b[1m\x1b[31mEvaluation error:\x1b[0m {}", eval_err),
-			}
+	// Parse the input
+	let expr = match dicey::parser().parse(&input).into_result() {
+		Ok(expr) => expr,
+		Err(errs) => {
+			errs.into_iter()
+				.for_each(|err| eprintln!("\x1b[1m\x1b[31mParse error:\x1b[0m {}", err));
+			exit(1);
 		}
-		Err(parse_errs) => parse_errs
-			.into_iter()
-			.for_each(|e| eprintln!("\x1b[1m\x1b[31mParse error:\x1b[0m {}", e)),
 	};
+
+	// Evaluate the expression
+	let evaled = match expr.eval() {
+		Ok(evaled) => evaled,
+		Err(err) => {
+			eprintln!("\x1b[1m\x1b[31mEvaluation error:\x1b[0m {}", err);
+			exit(2);
+		}
+	};
+
+	println!("\x1b[1m\x1b[36mEvaluated:\x1b[0m {evaled:#?}");
+	println!("\x1b[1m\x1b[36mDescribed:\x1b[0m {evaled}");
+	println!(
+		"\x1b[1m\x1b[36mTotal:\x1b[0m {}",
+		evaled
+			.calc()
+			.map(|total| total.to_string())
+			.or_else(|err| Ok::<_, dicey::expr::Error>(err.to_string()))
+			.unwrap()
+	);
 }
 
 #[cfg(not(feature = "parse"))]
-fn main() {
-	println!("Nothing to do since the parse feature is disabled.")
+fn main() -> Result<(), &'static str> {
+	Err("Nothing to do since the parse feature is disabled.")
 }
