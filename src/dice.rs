@@ -541,8 +541,8 @@ impl Modifier {
 			let mut to_reroll = rolled
 				.rolls
 				.iter_mut()
-				.filter(|r| !r.is_dropped())
-				.filter(|r| cond.check(r.val))
+				.filter(|roll| !roll.is_dropped())
+				.filter(|roll| cond.check(roll.val))
 				.collect::<Vec<_>>();
 
 			if to_reroll.is_empty() {
@@ -606,10 +606,10 @@ impl Modifier {
 		let mut to_explode = rolled
 			.rolls
 			.iter()
-			.filter(|r| !r.is_dropped())
-			.filter(|r| match cond {
-				Some(cond) => cond.check(r.val),
-				None => r.val == rolled.dice.sides,
+			.filter(|roll| !roll.is_dropped())
+			.filter(|roll| match cond {
+				Some(cond) => cond.check(roll.val),
+				None => roll.val == rolled.dice.sides,
 			})
 			.count();
 
@@ -627,9 +627,9 @@ impl Modifier {
 				.then(|| {
 					explosions
 						.iter()
-						.filter(|r| match cond {
-							Some(cond) => cond.check(r.val),
-							None => r.val == rolled.dice.sides,
+						.filter(|roll| match cond {
+							Some(cond) => cond.check(roll.val),
+							None => roll.val == rolled.dice.sides,
 						})
 						.count()
 				})
@@ -646,7 +646,11 @@ impl Modifier {
 
 	/// Applies the [`Self::KeepHigh`] variant to a set of rolled dice.
 	fn apply_keep_high<'r, 'm: 'r>(&'m self, rolled: &mut Rolled<'r>, count: u8) {
-		let mut refs = rolled.rolls.iter_mut().filter(|r| !r.is_dropped()).collect::<Vec<_>>();
+		let mut refs = rolled
+			.rolls
+			.iter_mut()
+			.filter(|roll| !roll.is_dropped())
+			.collect::<Vec<_>>();
 		refs.sort();
 		refs.reverse();
 		refs.iter_mut().skip(count as usize).for_each(|roll| roll.drop(self));
@@ -654,7 +658,11 @@ impl Modifier {
 
 	/// Applies the [`Self::KeepLow`] variant to a set of rolled dice.
 	fn apply_keep_low<'r, 'm: 'r>(&'m self, rolled: &mut Rolled<'r>, count: u8) {
-		let mut refs = rolled.rolls.iter_mut().filter(|r| !r.is_dropped()).collect::<Vec<_>>();
+		let mut refs = rolled
+			.rolls
+			.iter_mut()
+			.filter(|roll| !roll.is_dropped())
+			.collect::<Vec<_>>();
 		refs.sort();
 		refs.iter_mut().skip(count as usize).for_each(|roll| roll.drop(self));
 	}
@@ -904,7 +912,7 @@ impl Rolled<'_> {
 		let mut sum: u16 = 0;
 
 		// Sum all rolls that haven't been dropped
-		for r in self.rolls.iter().filter(|r| !r.is_dropped()) {
+		for r in self.rolls.iter().filter(|roll| !roll.is_dropped()) {
 			sum = sum.checked_add(u16::from(r.val)).ok_or(Error::Overflow)?;
 		}
 
