@@ -18,6 +18,12 @@ fn parse_complex(b: &mut Bencher) {
 }
 
 #[bench]
+fn parse_absurd(b: &mut Bencher) {
+	let parser = dicey::parser();
+	b.iter(|| parser.parse(include_str!("absurd_dice_expr.txt")))
+}
+
+#[bench]
 fn parser_creation(b: &mut Bencher) {
 	b.iter(|| dicey::parser());
 }

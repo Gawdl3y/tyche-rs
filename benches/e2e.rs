@@ -25,3 +25,10 @@ fn e2e_complex(b: &mut Bencher) {
 			.unwrap()
 	});
 }
+
+#[bench]
+fn e2e_absurd(b: &mut Bencher) {
+	let parser = dicey::parser();
+	let expr = include_str!("absurd_dice_expr.txt");
+	b.iter(|| parser.parse(expr).unwrap().eval().unwrap().calc().unwrap())
+}
