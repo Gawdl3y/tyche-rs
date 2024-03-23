@@ -63,7 +63,7 @@ fn all_dice_sides_occur() {
 
 	rolls_in_range(&rolls, 20);
 
-	for side in 1..20 {
+	for side in 1..=20 {
 		assert!(rolls.iter().filter(|roll| roll.val == side).count() > 0);
 	}
 }
