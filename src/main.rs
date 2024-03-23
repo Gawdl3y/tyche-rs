@@ -1,4 +1,4 @@
-#[cfg(feature = "parse")]
+#[cfg(feature = "build-binary")]
 fn main() {
 	use std::{
 		env,
@@ -6,6 +6,7 @@ fn main() {
 		process::exit,
 	};
 
+	use ariadne::{ColorGenerator, Label, Report, ReportKind, Source};
 	use chumsky::Parser;
 
 	let args = env::args();
@@ -29,37 +30,51 @@ fn main() {
 	println!("\x1b[1m\x1b[36mInput:\x1b[0m {}", input);
 
 	// Parse the input
-	let expr = match dicey::parser().parse(&input).into_result() {
-		Ok(expr) => expr,
-		Err(errs) => {
-			errs.into_iter()
-				.for_each(|err| eprintln!("\x1b[1m\x1b[31mParse error:\x1b[0m {}", err));
-			exit(1);
+	let parsed = dicey::parser().parse(&input);
+	let expr = if !parsed.has_errors() {
+		parsed.into_output().expect("no output from parser without errors")
+	} else {
+		let mut colors = ColorGenerator::new();
+		let mut report = Report::build(ReportKind::Error, "input", 0).with_message("Unable to parse dice expression");
+
+		for err in parsed.errors() {
+			report.add_label(
+				Label::new(("input", err.span().into_range()))
+					.with_color(colors.next())
+					.with_message(err.reason()),
+			);
+			println!("{err}");
 		}
+
+		report.finish().eprint(("input", Source::from(&input))).unwrap();
+		exit(1);
 	};
 
 	// Evaluate the expression
 	let evaled = match expr.eval() {
 		Ok(evaled) => evaled,
 		Err(err) => {
-			eprintln!("\x1b[1m\x1b[31mEvaluation error:\x1b[0m {}", err);
+			eprintln!("\x1b[1m\x1b[31mEvaluation error:\x1b[0m {err}");
 			exit(2);
 		}
 	};
 
 	println!("\x1b[1m\x1b[36mEvaluated:\x1b[0m {evaled:#?}");
 	println!("\x1b[1m\x1b[36mDescribed:\x1b[0m {evaled}");
-	println!(
-		"\x1b[1m\x1b[36mTotal:\x1b[0m {}",
-		evaled
-			.calc()
-			.map(|total| total.to_string())
-			.or_else(|err| Ok::<_, dicey::expr::Error>(err.to_string()))
-			.unwrap()
-	);
+
+	// Calculate the total
+	let total = match evaled.calc() {
+		Ok(total) => total,
+		Err(err) => {
+			eprintln!("\x1b[1m\x1b[31mCalculation error:\x1b[0m {err}");
+			exit(3);
+		}
+	};
+
+	println!("\x1b[1m\x1b[36mTotal:\x1b[0m {total}");
 }
 
-#[cfg(not(feature = "parse"))]
+#[cfg(not(feature = "build-binary"))]
 fn main() -> Result<(), &'static str> {
-	Err("Nothing to do since the parse feature is disabled.")
+	Err("Nothing to do since the build-binary feature is disabled.")
 }

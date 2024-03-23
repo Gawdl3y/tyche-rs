@@ -19,6 +19,7 @@ edition = "2021"
 [features]
 default = ["parse"]
 parse = ["dep:chumsky"]
+build-binary = ["parse", "dep:ariadne"]
 
 [dependencies]
 fastrand = "2.0.1"
@@ -26,3 +27,8 @@ thiserror = "1.0.57"
 chumsky = { git = "https://github.com/zesterer/chumsky.git", optional = true, features = [
 	"label",
 ] }
+ariadne = { version = "0.4", optional = true }
+
+[[bin]]
+name = "dicey"
+required-features = ["build-binary"]
