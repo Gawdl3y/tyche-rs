@@ -2,6 +2,8 @@
 
 extern crate test;
 
+use std::borrow::Cow;
+
 use test::Bencher;
 
 use dicey::{
@@ -28,6 +30,12 @@ fn roll_100d20(b: &mut Bencher) {
 }
 
 #[bench]
+fn roll_absurd(b: &mut Bencher) {
+	let dice: Dice = "100d42min3max40rr<6x>37kh20kl10xo>29".parse().unwrap();
+	b.iter(|| dice.roll().unwrap())
+}
+
+#[bench]
 fn roll_and_total_4d8(b: &mut Bencher) {
 	let dice = Dice::new(4, 8);
 	b.iter(|| dice.roll().unwrap().total().unwrap());
@@ -46,11 +54,17 @@ fn roll_and_total_100d20(b: &mut Bencher) {
 }
 
 #[bench]
+fn roll_and_total_absurd(b: &mut Bencher) {
+	let dice: Dice = "100d42min3max40rr<6x>37kh20kl10xo>29".parse().unwrap();
+	b.iter(|| dice.roll().unwrap().total().unwrap())
+}
+
+#[bench]
 fn explain_4d8_result(b: &mut Bencher) {
 	let dice = Dice::new(4, 8);
 	let roll = Rolled {
 		rolls: vec![DieRoll::new(6), DieRoll::new(6), DieRoll::new(6), DieRoll::new(6)],
-		dice: &dice,
+		dice: Cow::Owned(dice),
 	};
 	b.iter(|| roll.describe(None))
 }
@@ -58,7 +72,7 @@ fn explain_4d8_result(b: &mut Bencher) {
 #[bench]
 fn explain_8d6x_result(b: &mut Bencher) {
 	let dice = Dice::builder().count(8).sides(6).explode(None, true).build();
-	let modifier = dice.modifiers.first();
+	let modifier = Some(dice.modifiers[0]);
 	let roll = Rolled {
 		rolls: vec![
 			DieRoll::new(6),
@@ -85,7 +99,7 @@ fn explain_8d6x_result(b: &mut Bencher) {
 				roll
 			},
 		],
-		dice: &dice,
+		dice: Cow::Owned(dice),
 	};
 	b.iter(|| roll.describe(None))
 }

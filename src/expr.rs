@@ -79,10 +79,10 @@ impl Expr {
 	/// # Errors
 	/// If there is an integer overflow or division error encountered during any operations, or if an error occurs
 	/// during dice rolling, an error variant will be returned.
-	pub fn eval(&self) -> Result<Evaled, Error> {
+	pub fn eval(&self) -> Result<Evaled, EvalError> {
 		Ok(match self {
 			Self::Num(x) => Evaled::Num(*x),
-			Self::Dice(dice) => Evaled::Dice(dice.roll()?),
+			Self::Dice(dice) => Evaled::Dice(dice.roll().map_err(|err| EvalError::Dice(self.clone(), err))?),
 
 			Self::Neg(x) => Evaled::Neg(Box::new(x.eval()?)),
 
@@ -97,9 +97,12 @@ impl Expr {
 	/// Evaluates the expression, passing along a specific Rng to use for any random number generation.
 	/// See [`Self::eval()`] for more information.
 	#[allow(clippy::missing_errors_doc)]
-	pub fn eval_using_rng(&self, rng: &mut Rng) -> Result<Evaled, Error> {
+	pub fn eval_using_rng(&self, rng: &mut Rng) -> Result<Evaled, EvalError> {
 		Ok(match self {
-			Self::Dice(dice) => Evaled::Dice(dice.roll_using_rng(rng)?),
+			Self::Dice(dice) => Evaled::Dice(
+				dice.roll_using_rng(rng)
+					.map_err(|err| EvalError::Dice(self.clone(), err))?,
+			),
 			_ => self.eval()?,
 		})
 	}
@@ -160,12 +163,12 @@ impl fmt::Display for Expr {
 /// Individual elements of an evaluated mathematical dice expression
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
-pub enum Evaled<'r> {
+pub enum Evaled<'a> {
 	/// Standalone integer
 	Num(i32),
 
 	/// Rolled dice
-	Dice(Rolled<'r>),
+	Dice(Rolled<'a>),
 
 	/// Negation of an expression (makes the result of it negative)
 	Neg(Box<Self>),
@@ -194,28 +197,68 @@ impl Evaled<'_> {
 	/// # Errors
 	/// If there is an integer overflow or division error, or an error calculating the total of a set of dice rolls,an
 	/// error variant will be returned.
-	pub fn calc(&self) -> Result<i32, Error> {
+	pub fn calc(&self) -> Result<i32, CalcError> {
 		match self {
 			Self::Num(x) => Ok(*x),
-			Self::Dice(roll) => Ok(roll.total()?.into()),
+			Self::Dice(rolled) => Ok(rolled
+				.total()
+				.map_err(|err| CalcError::Dice(self.clone().into_owned(), err))?
+				.into()),
 
-			Self::Neg(x) => Ok(x.calc()?.checked_neg().ok_or(Error::Overflow)?),
+			Self::Neg(x) => Ok(x
+				.calc()?
+				.checked_neg()
+				.ok_or_else(|| CalcError::Overflow(self.clone().into_owned()))?),
 
-			Self::Add(a, b) => a.calc()?.checked_add(b.calc()?).ok_or(Error::Overflow),
-			Self::Sub(a, b) => a.calc()?.checked_sub(b.calc()?).ok_or(Error::Overflow),
-			Self::Mul(a, b) => a.calc()?.checked_mul(b.calc()?).ok_or(Error::Overflow),
-			Self::DivDown(a, b) => a.calc()?.checked_div(b.calc()?).ok_or(Error::Division),
+			Self::Add(a, b) => a
+				.calc()?
+				.checked_add(b.calc()?)
+				.ok_or_else(|| CalcError::Overflow(self.clone().into_owned())),
+			Self::Sub(a, b) => a
+				.calc()?
+				.checked_sub(b.calc()?)
+				.ok_or_else(|| CalcError::Overflow(self.clone().into_owned())),
+			Self::Mul(a, b) => a
+				.calc()?
+				.checked_mul(b.calc()?)
+				.ok_or_else(|| CalcError::Overflow(self.clone().into_owned())),
+			Self::DivDown(a, b) => a
+				.calc()?
+				.checked_div(b.calc()?)
+				.ok_or_else(|| CalcError::Division(self.clone().into_owned())),
 			Self::DivUp(a, b) => {
 				let a_val = a.calc()?;
 				let b_val = b.calc()?;
-				let result = a_val.checked_div(b_val).ok_or(Error::Division)?;
-				let remainder = a_val.checked_rem(b_val).ok_or(Error::Division)?;
+				let result = a_val
+					.checked_div(b_val)
+					.ok_or_else(|| CalcError::Division(self.clone().into_owned()))?;
+				let remainder = a_val
+					.checked_rem(b_val)
+					.ok_or_else(|| CalcError::Division(self.clone().into_owned()))?;
 				if remainder != 0 {
-					Ok(result.checked_add(1).ok_or(Error::Overflow)?)
+					Ok(result
+						.checked_add(1)
+						.ok_or_else(|| CalcError::Overflow(self.clone().into_owned()))?)
 				} else {
 					Ok(result)
 				}
 			}
+		}
+	}
+
+	/// Moves all of self's owned data into a new instance and clones any unowned data in order to create a `'static`
+	/// instance of self.
+	#[must_use]
+	pub fn into_owned(self) -> Evaled<'static> {
+		match self {
+			Self::Num(x) => Evaled::Num(x),
+			Self::Dice(rolled) => Evaled::Dice(rolled.into_owned()),
+			Self::Neg(x) => Evaled::Neg(Box::new(x.into_owned())),
+			Self::Add(a, b) => Evaled::Add(Box::new(a.into_owned()), Box::new(b.into_owned())),
+			Self::Sub(a, b) => Evaled::Sub(Box::new(a.into_owned()), Box::new(b.into_owned())),
+			Self::Mul(a, b) => Evaled::Mul(Box::new(a.into_owned()), Box::new(b.into_owned())),
+			Self::DivDown(a, b) => Evaled::DivDown(Box::new(a.into_owned()), Box::new(b.into_owned())),
+			Self::DivUp(a, b) => Evaled::DivUp(Box::new(a.into_owned()), Box::new(b.into_owned())),
 		}
 	}
 }
@@ -251,21 +294,30 @@ impl fmt::Display for Evaled<'_> {
 	}
 }
 
-/// Error resulting from evaluating a [`Expr`] or calculating an [`Evaled`]
+/// Error that can occur during [`Expr::eval()`]
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]
-pub enum Error {
+pub enum EvalError {
 	/// Dice-related error (likely during rolling)
-	#[error("dice error: {0}")]
-	Dice(#[from] DiceError),
+	#[error("dice error while evaluating \"{0}\": {1}")]
+	Dice(Expr, #[source] DiceError),
+}
+
+/// Error that can occur during [`Evaled::calc()`]
+#[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
+pub enum CalcError {
+	/// Dice-related error (likely during totalling)
+	#[error("dice error while calculating ({0}): {1}")]
+	Dice(Evaled<'static>, #[source] DiceError),
 
 	/// Integer overflow (likely during calculation of a sum or product)
-	#[error("integer overflow")]
-	Overflow,
+	#[error("integer overflow while calculating {0}")]
+	Overflow(Evaled<'static>),
 
 	/// Division-related error (likely division by zero)
-	#[error("division error")]
-	Division,
+	#[error("division error while calculating {0}")]
+	Division(Evaled<'static>),
 }
 
 /// Operation type for an individual expression

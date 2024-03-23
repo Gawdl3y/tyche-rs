@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::dice::{Dice, DieRoll, Modifier, Rolled};
 
 #[test]
@@ -5,7 +7,7 @@ fn single_d20() {
 	let dice = construct_plain(1, 20);
 	let rolled = rolls_successfully_and_in_range(&dice);
 	assert_eq!(rolled.rolls.len(), 1);
-	assert_eq!(rolled.dice, &dice);
+	assert_eq!(*rolled.dice, dice);
 }
 
 #[test]
@@ -13,7 +15,7 @@ fn double_d8() {
 	let dice = construct_plain(2, 8);
 	let rolled = rolls_successfully_and_in_range(&dice);
 	assert_eq!(rolled.rolls.len(), 2);
-	assert_eq!(rolled.dice, &dice);
+	assert_eq!(*rolled.dice, dice);
 }
 
 #[test]
@@ -21,7 +23,7 @@ fn hundred_d42s() {
 	let dice = construct_plain(100, 42);
 	let rolled = rolls_successfully_and_in_range(&dice);
 	assert_eq!(rolled.rolls.len(), 100);
-	assert_eq!(rolled.dice, &dice);
+	assert_eq!(*rolled.dice, dice);
 }
 
 #[test]
@@ -29,7 +31,7 @@ fn max_dice() {
 	let dice = construct_plain(u8::MAX, u8::MAX);
 	let rolled = rolls_successfully_and_in_range(&dice);
 	assert_eq!(rolled.rolls.len(), u8::MAX as usize);
-	assert_eq!(rolled.dice, &dice);
+	assert_eq!(*rolled.dice, dice);
 }
 
 #[test]
@@ -99,15 +101,15 @@ fn roll_equality() {
 			DieRoll::new(8),
 			DieRoll::new(8),
 			DieRoll {
-				added_by: da.modifiers.first(),
+				added_by: Some(da.modifiers[0]),
 				..DieRoll::new(4)
 			},
 			DieRoll {
-				added_by: da.modifiers.first(),
+				added_by: Some(da.modifiers[0]),
 				..DieRoll::new(7)
 			},
 		],
-		dice: &da,
+		dice: Cow::Owned(da),
 	};
 	let rb = Rolled {
 		rolls: vec![
@@ -116,15 +118,15 @@ fn roll_equality() {
 			DieRoll::new(8),
 			DieRoll::new(8),
 			DieRoll {
-				added_by: db.modifiers.first(),
+				added_by: Some(db.modifiers[0]),
 				..DieRoll::new(4)
 			},
 			DieRoll {
-				added_by: db.modifiers.first(),
+				added_by: Some(db.modifiers[0]),
 				..DieRoll::new(7)
 			},
 		],
-		dice: &db,
+		dice: Cow::Owned(db),
 	};
 	assert_eq!(ra, rb);
 }
@@ -140,15 +142,15 @@ fn roll_inequality() {
 			DieRoll::new(8),
 			DieRoll::new(8),
 			DieRoll {
-				added_by: da.modifiers.first(),
+				added_by: Some(da.modifiers[0]),
 				..DieRoll::new(4)
 			},
 			DieRoll {
-				added_by: da.modifiers.first(),
+				added_by: Some(da.modifiers[0]),
 				..DieRoll::new(7)
 			},
 		],
-		dice: &da,
+		dice: Cow::Owned(da),
 	};
 	let rb = Rolled {
 		rolls: vec![
@@ -157,15 +159,15 @@ fn roll_inequality() {
 			DieRoll::new(8),
 			DieRoll::new(8),
 			DieRoll {
-				added_by: db.modifiers.first(),
+				added_by: Some(db.modifiers[0]),
 				..DieRoll::new(4)
 			},
 			DieRoll {
-				added_by: db.modifiers.first(),
+				added_by: Some(db.modifiers[0]),
 				..DieRoll::new(7)
 			},
 		],
-		dice: &db,
+		dice: Cow::Owned(db),
 	};
 	assert_ne!(ra, rb);
 
@@ -178,19 +180,19 @@ fn roll_inequality() {
 			DieRoll::new(8),
 			DieRoll::new(8),
 			DieRoll {
-				added_by: da.modifiers.first(),
+				added_by: Some(da.modifiers[0]),
 				..DieRoll::new(4)
 			},
 			DieRoll {
-				added_by: da.modifiers.first(),
+				added_by: Some(da.modifiers[0]),
 				..DieRoll::new(7)
 			},
 		],
-		dice: &da,
+		dice: Cow::Owned(da),
 	};
 	let rb = Rolled {
 		rolls: vec![DieRoll::new(4), DieRoll::new(5), DieRoll::new(8), DieRoll::new(8)],
-		dice: &db,
+		dice: Cow::Owned(db),
 	};
 	assert_ne!(ra, rb);
 }
@@ -212,7 +214,7 @@ fn construct_exploding(count: u8, sides: u8) -> Dice {
 	dice
 }
 
-fn rolls_successfully_and_in_range<'a>(dice: &'a Dice) -> Rolled<'a> {
+fn rolls_successfully_and_in_range(dice: &Dice) -> Rolled {
 	let result = dice.roll();
 	assert!(result.is_ok());
 

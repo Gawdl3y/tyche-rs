@@ -1,6 +1,6 @@
 use crate::{
 	dice::Dice,
-	expr::{Error, Evaled, Expr},
+	expr::{CalcError, Evaled, Expr},
 };
 
 #[test]
@@ -84,5 +84,5 @@ fn calc_overflow() {
 	let expr = Expr::Add(Box::new(Expr::Num(i32::MAX)), Box::new(Expr::Num(1)));
 	let result = expr.eval().unwrap().calc();
 	assert!(result.is_err());
-	assert!(matches!(result.unwrap_err(), Error::Overflow));
+	assert!(matches!(result.unwrap_err(), CalcError::Overflow(..)));
 }
