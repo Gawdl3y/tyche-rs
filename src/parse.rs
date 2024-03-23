@@ -52,9 +52,10 @@ use crate::{
 pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'src, char>>> + Copy {
 	// Parser for dice literals
 	text::int(10)
+		.labelled("dice count")
 		.or_not()
 		.then_ignore(just('d'))
-		.then(text::int(10))
+		.then(text::int(10).labelled("dice sides"))
 		.then(modifier_list_part())
 		.try_map(|((count, sides), modifiers), span| {
 			let count = count
@@ -71,6 +72,7 @@ pub fn dice_part<'src>() -> impl Parser<'src, &'src str, Dice, extra::Err<Rich<'
 				modifiers,
 			})
 		})
+		.labelled("dice set")
 }
 
 /// Generates a parser that specifically handles dice with or without modifiers like "d20", "2d20kh", "8d6x", etc.
@@ -103,7 +105,7 @@ pub fn modifier_part<'src>() -> impl Parser<'src, &'src str, Modifier, extra::Er
 		// Keep lowest (e.g. kl, kl2)
 		just("kl")
 			.ignored()
-			.then(text::int(10).or_not())
+			.then(text::int(10).labelled("keep lowest count").or_not())
 			.try_map(|((), count), span| {
 				let count = count
 					.unwrap_or("1")
@@ -115,7 +117,7 @@ pub fn modifier_part<'src>() -> impl Parser<'src, &'src str, Modifier, extra::Er
 		just('k')
 			.ignored()
 			.then_ignore(just('h').or_not())
-			.then(text::int(10).or_not())
+			.then(text::int(10).labelled("keep highest count").or_not())
 			.try_map(|((), count), span| {
 				let count = count
 					.unwrap_or("1")
@@ -126,7 +128,7 @@ pub fn modifier_part<'src>() -> impl Parser<'src, &'src str, Modifier, extra::Er
 		// Min (e.g. min3)
 		just("min")
 			.ignored()
-			.then(text::int(10))
+			.then(text::int(10).labelled("min roll value"))
 			.try_map(|((), min): ((), &str), span| {
 				let min = min
 					.parse()
@@ -136,7 +138,7 @@ pub fn modifier_part<'src>() -> impl Parser<'src, &'src str, Modifier, extra::Er
 		// Max (e.g. max4)
 		just("max")
 			.ignored()
-			.then(text::int(10))
+			.then(text::int(10).labelled("max roll value"))
 			.try_map(|((), max): ((), &str), span| {
 				let max = max
 					.parse()
@@ -144,6 +146,7 @@ pub fn modifier_part<'src>() -> impl Parser<'src, &'src str, Modifier, extra::Er
 				Ok(Modifier::Max(max))
 			}),
 	))
+	.labelled("dice modifier")
 }
 
 /// Generates a parser that specifically handles dice modifiers with conditions like "r1", "xo>4", "kh", etc.
@@ -176,14 +179,16 @@ pub fn condition_part<'src>() -> impl Parser<'src, &'src str, Condition, extra::
 		just('<').to(Condition::Lt as fn(u8) -> _),
 		just('=').to(Condition::Eq as fn(u8) -> _),
 	))
+	.labelled("condition symbol")
 	.or_not()
-	.then(text::int::<&'src str, _, _>(10))
+	.then(text::int::<&'src str, _, _>(10).labelled("condition number"))
 	.try_map(|(condfn, val), span| {
 		let val = val
 			.parse()
 			.map_err(|err| Rich::custom(span, format!("Modifier condition: {err}")))?;
 		Ok(condfn.map_or_else(|| Condition::Eq(val), |condfn| condfn(val)))
 	})
+	.labelled("modifier condition")
 }
 
 /// Generates a parser that specifically handles dice modifier conditions like "<3", ">=5", "=1", "1", etc.
@@ -203,13 +208,21 @@ pub fn expr_part<'src>() -> impl Parser<'src, &'src str, Expr, extra::Err<Rich<'
 	recursive(|expr| {
 		// Parser for numbers
 		let int = text::int(10)
-			.try_map(|s: &str, span| s.parse().map(Expr::Num).map_err(|e| Rich::custom(span, format!("{e}"))));
+			.try_map(|s: &str, span| {
+				s.parse()
+					.map(Expr::Num)
+					.map_err(|err| Rich::custom(span, format!("{err}")))
+			})
+			.labelled("number");
 
 		// Parser for dice literals
 		let dice = dice_part().map(Expr::Dice);
 
 		// Parser for expressions enclosed in parentheses
-		let atom = dice.or(int).or(expr.delimited_by(just('('), just(')'))).padded();
+		let atom = dice
+			.or(int)
+			.or(expr.delimited_by(just('('), just(')')).labelled("group"))
+			.padded();
 
 		// Parser for negative sign
 		let unary = op('-').repeated().foldr(atom, |_op, rhs| Expr::Neg(Box::new(rhs)));

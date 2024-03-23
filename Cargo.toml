@@ -23,4 +23,6 @@ parse = ["dep:chumsky"]
 [dependencies]
 fastrand = "2.0.1"
 thiserror = "1.0.57"
-chumsky = { version = "1.0.0-alpha.6", optional = true }
+chumsky = { git = "https://github.com/zesterer/chumsky.git", optional = true, features = [
+	"label",
+] }
