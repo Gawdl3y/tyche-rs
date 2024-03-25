@@ -1075,7 +1075,7 @@ impl Rolled<'_> {
 		for r in self.rolls.iter().filter(|roll| !roll.is_dropped()) {
 			sum = sum
 				.checked_add(u16::from(r.val))
-				.ok_or(Error::Overflow(self.clone().into_owned()))?;
+				.ok_or_else(|| Error::Overflow(self.clone().into_owned()))?;
 		}
 
 		Ok(sum)
