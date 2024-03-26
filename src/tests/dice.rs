@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::dice::{Dice, DieRoll, Modifier, Rolled};
+use crate::dice::{roller::FastRand, Dice, DieRoll, Modifier, Rolled};
 
 #[test]
 fn single_d20() {
@@ -53,10 +53,11 @@ fn exploding_max_d4s() {
 #[test]
 fn all_dice_sides_occur() {
 	let dice = Dice::new(u8::MAX, 20);
+	let mut rng = FastRand::default();
 	let mut rolls = Vec::new();
 
 	for _ in 1..=1000 {
-		let rolled = dice.roll();
+		let rolled = dice.roll(&mut rng, true);
 		assert!(rolled.is_ok());
 		rolls.append(&mut rolled.unwrap().rolls);
 	}
@@ -210,12 +211,12 @@ fn construct_exploding(count: u8, sides: u8) -> Dice {
 	assert_eq!(dice.count, count);
 	assert_eq!(dice.sides, sides);
 	assert_eq!(dice.modifiers.len(), 1);
-	assert!(matches!(dice.modifiers.first().unwrap(), Modifier::Explode { .. }));
+	assert!(matches!(dice.modifiers[0], Modifier::Explode { .. }));
 	dice
 }
 
 fn rolls_successfully_and_in_range(dice: &Dice) -> Rolled {
-	let result = dice.roll();
+	let result = dice.roll(&mut FastRand::default(), true);
 	assert!(result.is_ok());
 
 	let rolled = result.unwrap();

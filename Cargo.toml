@@ -17,13 +17,14 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["parse"]
+default = ["parse", "fastrand"]
 parse = ["dep:chumsky"]
+fastrand = ["dep:fastrand"]
 build-binary = ["parse", "dep:ariadne"]
 
 [dependencies]
-fastrand = "2.0.1"
 thiserror = "1.0.57"
+fastrand = { version = "2.0.1", optional = true }
 chumsky = { git = "https://github.com/zesterer/chumsky.git", optional = true, features = [
 	"label",
 ] }

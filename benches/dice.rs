@@ -7,56 +7,64 @@ use std::borrow::Cow;
 use test::Bencher;
 
 use dicey::{
-	dice::{Dice, DieRoll, Rolled},
+	dice::{roller::FastRand, Dice, DieRoll, Rolled},
 	expr::Describe,
 };
 
 #[bench]
 fn roll_4d8(b: &mut Bencher) {
 	let dice = Dice::new(4, 8);
-	b.iter(|| dice.roll().unwrap());
+	let mut rng = FastRand::default();
+	b.iter(|| dice.roll(&mut rng, true).unwrap());
 }
 
 #[bench]
 fn roll_8d6x(b: &mut Bencher) {
 	let dice = Dice::builder().count(8).sides(6).explode(None, true).build();
-	b.iter(|| dice.roll().unwrap());
+	let mut rng = FastRand::default();
+	b.iter(|| dice.roll(&mut rng, true).unwrap());
 }
 
 #[bench]
 fn roll_100d20(b: &mut Bencher) {
 	let dice = Dice::new(100, 20);
-	b.iter(|| dice.roll().unwrap())
+	let mut rng = FastRand::default();
+	b.iter(|| dice.roll(&mut rng, true).unwrap())
 }
 
 #[bench]
 fn roll_absurd(b: &mut Bencher) {
 	let dice: Dice = "100d42min3max40rr<6x>37kh20kl10xo>29".parse().unwrap();
-	b.iter(|| dice.roll().unwrap())
+	let mut rng = FastRand::default();
+	b.iter(|| dice.roll(&mut rng, true).unwrap())
 }
 
 #[bench]
 fn roll_and_total_4d8(b: &mut Bencher) {
 	let dice = Dice::new(4, 8);
-	b.iter(|| dice.roll().unwrap().total().unwrap());
+	let mut rng = FastRand::default();
+	b.iter(|| dice.roll(&mut rng, true).unwrap().total().unwrap());
 }
 
 #[bench]
 fn roll_and_total_8d6x(b: &mut Bencher) {
 	let dice = Dice::builder().count(8).sides(6).explode(None, true).build();
-	b.iter(|| dice.roll().unwrap().total().unwrap());
+	let mut rng = FastRand::default();
+	b.iter(|| dice.roll(&mut rng, true).unwrap().total().unwrap());
 }
 
 #[bench]
 fn roll_and_total_100d20(b: &mut Bencher) {
 	let dice = Dice::new(100, 20);
-	b.iter(|| dice.roll().unwrap().total().unwrap());
+	let mut rng = FastRand::default();
+	b.iter(|| dice.roll(&mut rng, true).unwrap().total().unwrap());
 }
 
 #[bench]
 fn roll_and_total_absurd(b: &mut Bencher) {
 	let dice: Dice = "100d42min3max40rr<6x>37kh20kl10xo>29".parse().unwrap();
-	b.iter(|| dice.roll().unwrap().total().unwrap())
+	let mut rng = FastRand::default();
+	b.iter(|| dice.roll(&mut rng, true).unwrap().total().unwrap())
 }
 
 #[bench]

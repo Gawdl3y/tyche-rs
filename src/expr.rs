@@ -2,9 +2,7 @@
 
 use std::fmt;
 
-use fastrand::Rng;
-
-use crate::dice::{Dice, Error as DiceError, Rolled};
+use crate::dice::{roller::Roller, Dice, Error as DiceError, Rolled};
 
 /// Generates an implementation of [`HasOpType`] and [`DescribeBinaryExpr`] for an enum type.
 /// This is very tightly coupled with the expected variants:
@@ -79,31 +77,18 @@ impl Expr {
 	/// # Errors
 	/// If there is an integer overflow or division error encountered during any operations, or if an error occurs
 	/// during dice rolling, an error variant will be returned.
-	pub fn eval(&self) -> Result<Evaled, EvalError> {
+	pub fn eval(&self, rng: &mut impl Roller) -> Result<Evaled, EvalError> {
 		Ok(match self {
 			Self::Num(x) => Evaled::Num(*x),
-			Self::Dice(dice) => Evaled::Dice(dice.roll().map_err(|err| EvalError::Dice(self.clone(), err))?),
+			Self::Dice(dice) => Evaled::Dice(dice.roll(rng, true).map_err(|err| EvalError::Dice(self.clone(), err))?),
 
-			Self::Neg(x) => Evaled::Neg(Box::new(x.eval()?)),
+			Self::Neg(x) => Evaled::Neg(Box::new(x.eval(rng)?)),
 
-			Self::Add(a, b) => Evaled::Add(Box::new(a.eval()?), Box::new(b.eval()?)),
-			Self::Sub(a, b) => Evaled::Sub(Box::new(a.eval()?), Box::new(b.eval()?)),
-			Self::Mul(a, b) => Evaled::Mul(Box::new(a.eval()?), Box::new(b.eval()?)),
-			Self::DivDown(a, b) => Evaled::DivDown(Box::new(a.eval()?), Box::new(b.eval()?)),
-			Self::DivUp(a, b) => Evaled::DivUp(Box::new(a.eval()?), Box::new(b.eval()?)),
-		})
-	}
-
-	/// Evaluates the expression, passing along a specific Rng to use for any random number generation.
-	/// See [`Self::eval()`] for more information.
-	#[allow(clippy::missing_errors_doc)]
-	pub fn eval_using_rng(&self, rng: &mut Rng) -> Result<Evaled, EvalError> {
-		Ok(match self {
-			Self::Dice(dice) => Evaled::Dice(
-				dice.roll_using_rng(rng)
-					.map_err(|err| EvalError::Dice(self.clone(), err))?,
-			),
-			_ => self.eval()?,
+			Self::Add(a, b) => Evaled::Add(Box::new(a.eval(rng)?), Box::new(b.eval(rng)?)),
+			Self::Sub(a, b) => Evaled::Sub(Box::new(a.eval(rng)?), Box::new(b.eval(rng)?)),
+			Self::Mul(a, b) => Evaled::Mul(Box::new(a.eval(rng)?), Box::new(b.eval(rng)?)),
+			Self::DivDown(a, b) => Evaled::DivDown(Box::new(a.eval(rng)?), Box::new(b.eval(rng)?)),
+			Self::DivUp(a, b) => Evaled::DivUp(Box::new(a.eval(rng)?), Box::new(b.eval(rng)?)),
 		})
 	}
 

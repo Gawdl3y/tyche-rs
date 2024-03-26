@@ -4,11 +4,13 @@
 //!
 //! [`Expr::dice`]: crate::expr::Expr::Dice
 
+pub mod roller;
+
 use std::{borrow::Cow, cmp, fmt};
 
-use fastrand::Rng;
-
 use crate::expr::Describe;
+
+use self::roller::Roller;
 
 /// A set of one or more rollable dice with a specific number of sides, along with a collection of modifiers to apply to
 /// any resulting rolls from them.
@@ -26,52 +28,37 @@ pub struct Dice {
 }
 
 impl Dice {
-	/// Rolls the dice and applies all of its modifiers to the rolls using the default Rng.
+	/// Rolls the dice and applies all of its modifiers to the rolls using the given roller.
 	///
 	/// # Errors
 	/// If any errors are encountered while applying the dice's modifiers, an error variant is returned.
-	#[inline]
-	pub fn roll(&self) -> Result<Rolled, Error> {
-		self.roll_using_rng(&mut Rng::new())
-	}
-
-	/// Rolls the dice and applies all of its modifiers to the rolls using the given Rng.
-	///
-	/// # Errors
-	/// If any errors are encountered while applying the dice's modifiers, an error variant is returned.
-	pub fn roll_using_rng(&self, rng: &mut Rng) -> Result<Rolled, Error> {
+	pub fn roll(&self, rng: &mut impl Roller, apply_mods: bool) -> Result<Rolled, Error> {
 		// Roll the dice!
 		let mut rolls = Vec::with_capacity(self.count as usize);
 		for _ in 0..self.count {
-			rolls.push(self.roll_single_using_rng(rng));
+			rolls.push(self.roll_single(rng));
 		}
-		let mut rolls = Rolled {
+		let mut rolled = Rolled {
 			rolls,
 			dice: Cow::Borrowed(self),
 		};
 
 		// Apply all modifiers
-		for modifier in &self.modifiers {
-			modifier.apply_using_rng(&mut rolls, rng)?;
+		if apply_mods {
+			for modifier in &self.modifiers {
+				modifier.apply(&mut rolled, rng)?;
+			}
 		}
 
-		Ok(rolls)
+		Ok(rolled)
 	}
 
 	/// Rolls a single die (with the same number of sides as the dice in this set)
-	/// with no modifiers using the default Rng.
+	/// with no modifiers using the given roller.
 	#[must_use]
 	#[inline]
-	pub fn roll_single(&self) -> DieRoll {
-		DieRoll::new_rand(self.sides)
-	}
-
-	/// Rolls a single die (with the same number of sides as the dice in this set)
-	/// with no modifiers using the given Rng.
-	#[must_use]
-	#[inline]
-	pub fn roll_single_using_rng(&self, rng: &mut Rng) -> DieRoll {
-		DieRoll::new_rand_using_rng(self.sides, rng)
+	pub fn roll_single(&self, rng: &mut impl Roller) -> DieRoll {
+		rng.roll(self.sides)
 	}
 
 	/// Creates a new set of dice matching this one but without any modifiers.
@@ -131,7 +118,7 @@ pub enum Modifier {
 	/// ## Reroll recursively (`rr`)
 	/// ```
 	/// use std::borrow::Cow;
-	/// use dicey::dice::{Condition, Dice, DieRoll, Rolled};
+	/// use dicey::dice::{Condition, Dice, DieRoll, Rolled, roller::FastRand};
 	///
 	/// // Dice set: 4d6rr
 	/// let dice = Dice::builder()
@@ -147,7 +134,7 @@ pub enum Modifier {
 	///
 	/// // Could also use a `Modifier::Reroll` directly rather than getting the modifier from the dice
 	/// let rr_mod = dice.modifiers[0];
-	/// rr_mod.apply(&mut rolled)?;
+	/// rr_mod.apply(&mut rolled, &mut FastRand::default())?;
 	///
 	/// // Final rolled dice set: 4d6rr[3, 6, 1, 2, x...]
 	/// assert!(rolled.rolls.len() > 4);
@@ -165,7 +152,7 @@ pub enum Modifier {
 	/// ## Reroll once (`r`)
 	/// ```
 	/// use std::borrow::Cow;
-	/// use dicey::dice::{Condition, Dice, DieRoll, Rolled};
+	/// use dicey::dice::{Condition, Dice, DieRoll, Rolled, roller::FastRand};
 	///
 	/// // Dice set: 4d6r
 	/// let dice = Dice::builder()
@@ -181,7 +168,7 @@ pub enum Modifier {
 	///
 	/// // Could also use a `Modifier::Reroll` directly rather than getting the modifier from the dice
 	/// let r_mod = dice.modifiers[0];
-	/// r_mod.apply(&mut rolled)?;
+	/// r_mod.apply(&mut rolled, &mut FastRand::default())?;
 	///
 	/// // Final rolled dice set: 4d6r[3, 6, 1, 2, x]
 	/// assert_eq!(rolled.rolls.len(), 5);
@@ -204,7 +191,7 @@ pub enum Modifier {
 	/// ## Explode recursively (`x`)
 	/// ```
 	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled};
+	/// use dicey::dice::{Dice, DieRoll, Rolled, roller::FastRand};
 	///
 	/// // Dice set: 4d6x
 	/// let dice = Dice::builder()
@@ -220,7 +207,7 @@ pub enum Modifier {
 	///
 	/// // Could also use a `Modifier::Explode` directly rather than getting the modifier from the dice
 	/// let x_mod = dice.modifiers[0];
-	/// x_mod.apply(&mut rolled)?;
+	/// x_mod.apply(&mut rolled, &mut FastRand::default())?;
 	///
 	/// // Final rolled dice set: 4d6xo[3, 6, 1, 2, x...]
 	/// assert!(rolled.rolls.len() > 4);
@@ -231,7 +218,7 @@ pub enum Modifier {
 	/// ## Explode once (`xo`)
 	/// ```
 	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled};
+	/// use dicey::dice::{Dice, DieRoll, Rolled, roller::FastRand};
 	///
 	/// // Dice set: 4d6xo
 	/// let dice = Dice::builder()
@@ -247,7 +234,7 @@ pub enum Modifier {
 	///
 	/// // Could also use a `Modifier::Explode` directly rather than getting the modifier from the dice
 	/// let xo_mod = dice.modifiers[0];
-	/// xo_mod.apply(&mut rolled)?;
+	/// xo_mod.apply(&mut rolled, &mut FastRand::default())?;
 	///
 	/// // Final rolled dice set: 4d6xo[3, 6, 1, 2, x]
 	/// assert_eq!(rolled.rolls.len(), 5);
@@ -270,7 +257,7 @@ pub enum Modifier {
 	/// ## Keep highest die (`kh`)
 	/// ```
 	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled};
+	/// use dicey::dice::{Dice, DieRoll, Rolled, roller::FastRand};
 	///
 	/// // Dice set: 4d6kh
 	/// let dice = Dice::builder()
@@ -286,7 +273,7 @@ pub enum Modifier {
 	///
 	/// // Could also use a `Modifier::KeepHigh(1)` directly rather than getting the modifier from the dice
 	/// let kh_mod = dice.modifiers[0];
-	/// kh_mod.apply(&mut rolled)?;
+	/// kh_mod.apply(&mut rolled, &mut FastRand::default())?;
 	///
 	/// // Final rolled dice set: 4d6kh[3 (d), 6, 1 (d), 2 (d)]
 	/// assert_eq!(
@@ -319,7 +306,7 @@ pub enum Modifier {
 	/// ## Keep highest 2 dice (`kh2`)
 	/// ```
 	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled};
+	/// use dicey::dice::{Dice, DieRoll, Rolled, roller::FastRand};
 	///
 	/// // Dice set: 4d6kh2
 	/// let dice = Dice::builder()
@@ -335,7 +322,7 @@ pub enum Modifier {
 	///
 	/// // Could also use a `Modifier::KeepHigh(2)` directly rather than getting the modifier from the dice
 	/// let kh2_mod = dice.modifiers[0];
-	/// kh2_mod.apply(&mut rolled)?;
+	/// kh2_mod.apply(&mut rolled, &mut FastRand::default())?;
 	///
 	/// // Final rolled dice set: 4d6kh2[3, 6, 1 (d), 2 (d)]
 	/// assert_eq!(
@@ -369,7 +356,7 @@ pub enum Modifier {
 	/// ## Keep lowest die (`kl`)
 	/// ```
 	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled};
+	/// use dicey::dice::{Dice, DieRoll, Rolled, roller::FastRand};
 	///
 	/// // Dice set: 4d6kl
 	/// let dice = Dice::builder()
@@ -385,7 +372,7 @@ pub enum Modifier {
 	///
 	/// // Could also use a `Modifier::KeepLow(1)` directly rather than getting the modifier from the dice
 	/// let kl_mod = dice.modifiers[0];
-	/// kl_mod.apply(&mut rolled)?;
+	/// kl_mod.apply(&mut rolled, &mut FastRand::default())?;
 	///
 	/// // Final rolled dice set: 4d6kl[3 (d), 6 (d), 1, 2 (d)]
 	/// assert_eq!(
@@ -418,7 +405,7 @@ pub enum Modifier {
 	/// ## Keep lowest 2 dice (`kl2`)
 	/// ```
 	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled};
+	/// use dicey::dice::{Dice, DieRoll, Rolled, roller::FastRand};
 	///
 	/// // Dice set: 4d6kl2
 	/// let dice = Dice::builder()
@@ -434,7 +421,7 @@ pub enum Modifier {
 	///
 	/// // Could also use a `Modifier::KeepLow(2)` directly rather than getting the modifier from the dice
 	/// let kl2_mod = dice.modifiers[0];
-	/// kl2_mod.apply(&mut rolled)?;
+	/// kl2_mod.apply(&mut rolled, &mut FastRand::default())?;
 	///
 	/// // Final rolled dice set: 4d6kl2[3 (d), 6 (d), 1, 2]
 	/// assert_eq!(
@@ -466,7 +453,7 @@ pub enum Modifier {
 	/// # Examples
 	/// ```
 	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled, ValChange};
+	/// use dicey::dice::{Dice, DieRoll, Rolled, ValChange, roller::FastRand};
 	///
 	/// // Dice set: 4d6min3
 	/// let dice = Dice::builder()
@@ -482,7 +469,7 @@ pub enum Modifier {
 	///
 	/// // Could also use a `Modifier::Min(3)` directly rather than getting the modifier from the dice
 	/// let min_mod = dice.modifiers[0];
-	/// min_mod.apply(&mut rolled)?;
+	/// min_mod.apply(&mut rolled, &mut FastRand::default())?;
 	///
 	/// // Final rolled dice set: 4d6min3[3, 6, 3 (m), 3 (m)]
 	/// assert_eq!(
@@ -522,7 +509,7 @@ pub enum Modifier {
 	/// # Examples
 	/// ```
 	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled, ValChange};
+	/// use dicey::dice::{Dice, DieRoll, Rolled, ValChange, roller::FastRand};
 	///
 	/// // Dice set: 4d6max3
 	/// let dice = Dice::builder()
@@ -538,7 +525,7 @@ pub enum Modifier {
 	///
 	/// // Could also use a `Modifier::Max(3)` directly rather than getting the modifier from the dice
 	/// let max_mod = dice.modifiers[0];
-	/// max_mod.apply(&mut rolled)?;
+	/// max_mod.apply(&mut rolled, &mut FastRand::default())?;
 	///
 	/// // Final rolled dice set: 4d6max3[3, 3 (m), 1, 2]
 	/// assert_eq!(
@@ -583,20 +570,11 @@ pub enum Modifier {
 }
 
 impl Modifier {
-	/// Applies the modifier to a set of rolls using the default Rng where needed.
+	/// Applies the modifier to a set of rolls, using a given roller if additional die rolls are needed.
 	///
 	/// # Errors
 	/// If applying the modifier would result in infinite additional die rolls, an error variant is returned.
-	#[inline]
-	pub fn apply(&self, rolls: &mut Rolled) -> Result<(), Error> {
-		self.apply_using_rng(rolls, &mut Rng::new())
-	}
-
-	/// Applies the modifier to a set of rolls using a given Rng where needed.
-	///
-	/// # Errors
-	/// If applying the modifier would result in infinite additional die rolls, an error variant is returned.
-	pub fn apply_using_rng(&self, rolled: &mut Rolled, rng: &mut Rng) -> Result<(), Error> {
+	pub fn apply(&self, rolled: &mut Rolled, rng: &mut impl Roller) -> Result<(), Error> {
 		match self {
 			Self::Reroll { cond, recurse } => self.apply_reroll(rolled, rng, *cond, *recurse)?,
 			Self::Explode { cond, recurse } => self.apply_explode(rolled, rng, *cond, *recurse)?,
@@ -610,7 +588,13 @@ impl Modifier {
 	}
 
 	/// Applies the [`Self::Reroll`] variant to a set of rolled dice.
-	fn apply_reroll(self, rolled: &mut Rolled, rng: &mut Rng, cond: Condition, recurse: bool) -> Result<(), Error> {
+	fn apply_reroll(
+		self,
+		rolled: &mut Rolled,
+		rng: &mut impl Roller,
+		cond: Condition,
+		recurse: bool,
+	) -> Result<(), Error> {
 		// Prevent recursively rerolling dice that would result in infinite rerolls
 		if recurse {
 			match cond {
@@ -646,7 +630,7 @@ impl Modifier {
 			// Roll additional dice and drop the originals
 			let mut rerolls = Vec::with_capacity(to_reroll.len());
 			for roll in &mut to_reroll {
-				let mut reroll = rolled.dice.roll_single_using_rng(rng);
+				let mut reroll = rolled.dice.roll_single(rng);
 				reroll.add(self);
 				rerolls.push(reroll);
 				roll.drop(self);
@@ -667,7 +651,7 @@ impl Modifier {
 	fn apply_explode(
 		self,
 		rolled: &mut Rolled,
-		rng: &mut Rng,
+		rng: &mut impl Roller,
 		cond: Option<Condition>,
 		recurse: bool,
 	) -> Result<(), Error> {
@@ -708,7 +692,7 @@ impl Modifier {
 			// Roll additional dice
 			let mut explosions = Vec::with_capacity(to_explode);
 			for _ in 0..to_explode {
-				let mut roll = rolled.dice.roll_single_using_rng(rng);
+				let mut roll = rolled.dice.roll_single(rng);
 				roll.add(self);
 				explosions.push(roll);
 			}
@@ -943,7 +927,7 @@ impl DieRoll {
 		self.added_by.is_none()
 	}
 
-	/// Indicates whether this die roll was been dropped by a modifier.
+	/// Indicates whether this die roll has been dropped by a modifier.
 	#[must_use]
 	#[inline]
 	pub const fn is_dropped(&self) -> bool {
@@ -966,19 +950,6 @@ impl DieRoll {
 			dropped_by: None,
 			changes: Vec::new(),
 		}
-	}
-
-	/// Creates a new die roll with a random value using the default Rng.
-	#[must_use]
-	pub fn new_rand(max: u8) -> Self {
-		let mut rng = Rng::new();
-		Self::new_rand_using_rng(rng.u8(1..=max), &mut rng)
-	}
-
-	/// Creates a new die roll with a random value using the given Rng.
-	#[must_use]
-	pub fn new_rand_using_rng(max: u8, rng: &mut Rng) -> Self {
-		Self::new(if max > 0 { rng.u8(1..=max) } else { 0 })
 	}
 }
 
@@ -1060,10 +1031,10 @@ impl Rolled<'_> {
 	///
 	/// # Examples
 	/// ```
-	/// use dicey::dice::Dice;
+	/// use dicey::dice::{Dice, roller::FastRand};
 	///
 	/// let dice = Dice::new(4, 8);
-	/// let rolled = dice.roll()?;
+	/// let rolled = dice.roll(&mut FastRand::default(), true)?;
 	/// let total = rolled.total()?;
 	/// assert_eq!(total, rolled.rolls.iter().map(|roll| roll.val as u16).sum());
 	/// # Ok::<(), dicey::dice::Error>(())
@@ -1088,6 +1059,15 @@ impl Rolled<'_> {
 		Rolled {
 			rolls: self.rolls,
 			dice: Cow::Owned(self.dice.into_owned()),
+		}
+	}
+
+	/// Creates a new rolled set of dice from a given set of dice and an iterator of values.
+	#[must_use]
+	pub fn from_dice_and_rolls(dice: Dice, rolls: impl IntoIterator<Item = u8>) -> Self {
+		Rolled {
+			rolls: rolls.into_iter().map(DieRoll::new).collect(),
+			dice: Cow::Owned(dice),
 		}
 	}
 }
@@ -1176,10 +1156,10 @@ pub enum Error {
 	///
 	/// # Examples
 	/// ```
-	/// use dicey::dice::{Dice, Error};
+	/// use dicey::dice::{Dice, Error, roller::FastRand};
 	///
 	/// let dice = Dice::builder().count(4).sides(1).explode(None, true).build();
-	/// assert!(matches!(dice.roll(), Err(Error::InfiniteRolls(..))));
+	/// assert!(matches!(dice.roll(&mut FastRand::default(), true), Err(Error::InfiniteRolls(..))));
 	/// ```
 	#[error("{0} would result in infinite rolls")]
 	InfiniteRolls(Dice),
