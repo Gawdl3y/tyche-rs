@@ -14,7 +14,7 @@ pub trait Roller {
 	fn roll(&mut self, sides: u8) -> DieRoll;
 }
 
-/// Generates rolls with random values using [`fastrand`]. Requires the `fastrand` feature (enabled by default).
+/// Generates rolls with random values using [fastrand]. Requires the `fastrand` feature (enabled by default).
 ///
 /// # Examples
 ///
@@ -46,7 +46,7 @@ pub struct FastRand(Rng);
 
 #[cfg(feature = "fastrand")]
 impl FastRand {
-	/// Creates a new [`fastrand`] roller that uses the given RNG instance to generate rolls.
+	/// Creates a new fastrand roller that uses the given RNG instance to generate rolls.
 	#[must_use]
 	#[inline]
 	pub const fn new(rng: Rng) -> Self {
