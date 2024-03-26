@@ -2,6 +2,7 @@
 
 use std::iter::Peekable;
 
+#[cfg(feature = "fastrand")]
 use fastrand::Rng;
 
 use super::DieRoll;
