@@ -43,7 +43,7 @@ fn exploding_max_d4s() {
 	let explosions = rolled
 		.rolls
 		.into_iter()
-		.filter(|roll| !roll.is_original())
+		.filter(|roll| roll.is_additional())
 		.collect::<Vec<_>>();
 	assert!(!explosions.is_empty());
 	assert!(explosions.len() < u8::MAX as usize);

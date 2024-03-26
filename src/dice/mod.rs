@@ -619,7 +619,7 @@ impl Modifier {
 			let mut to_reroll = rolled
 				.rolls
 				.iter_mut()
-				.filter(|roll| !roll.is_dropped())
+				.filter(|roll| roll.is_kept())
 				.filter(|roll| cond.check(roll.val))
 				.collect::<Vec<_>>();
 
@@ -681,7 +681,7 @@ impl Modifier {
 		let mut to_explode = rolled
 			.rolls
 			.iter()
-			.filter(|roll| !roll.is_dropped())
+			.filter(|roll| roll.is_kept())
 			.filter(|roll| match cond {
 				Some(cond) => cond.check(roll.val),
 				None => roll.val == rolled.dice.sides,
@@ -724,7 +724,7 @@ impl Modifier {
 		let mut refs = rolled
 			.rolls
 			.iter_mut()
-			.filter(|roll| !roll.is_dropped())
+			.filter(|roll| roll.is_kept())
 			.collect::<Vec<_>>();
 		refs.sort();
 		refs.reverse();
@@ -736,7 +736,7 @@ impl Modifier {
 		let mut refs = rolled
 			.rolls
 			.iter_mut()
-			.filter(|roll| !roll.is_dropped())
+			.filter(|roll| roll.is_kept())
 			.collect::<Vec<_>>();
 		refs.sort();
 		refs.iter_mut().skip(count as usize).for_each(|roll| roll.drop(self));
@@ -747,7 +747,7 @@ impl Modifier {
 		rolled
 			.rolls
 			.iter_mut()
-			.filter(|roll| !roll.is_dropped() && roll.val < min)
+			.filter(|roll| roll.is_kept() && roll.val < min)
 			.for_each(|roll| {
 				roll.changes.push(ValChange {
 					before: roll.val,
@@ -763,7 +763,7 @@ impl Modifier {
 		rolled
 			.rolls
 			.iter_mut()
-			.filter(|roll| !roll.is_dropped() && roll.val > max)
+			.filter(|roll| roll.is_kept() && roll.val > max)
 			.for_each(|roll| {
 				roll.changes.push(ValChange {
 					before: roll.val,
@@ -927,11 +927,27 @@ impl DieRoll {
 		self.added_by.is_none()
 	}
 
+	/// Indicates whether this die roll was added as the result of a modifier being applied.
+	/// This is the direct inverse of [`DieRoll::is_original()`].
+	#[must_use]
+	#[inline]
+	pub const fn is_additional(&self) -> bool {
+		self.added_by.is_some()
+	}
+
 	/// Indicates whether this die roll has been dropped by a modifier.
 	#[must_use]
 	#[inline]
 	pub const fn is_dropped(&self) -> bool {
 		self.dropped_by.is_some()
+	}
+
+	/// Indicates whether this die roll is being kept (has *not* been dropped by a modifier).
+	/// This is the direct inverse of [`DieRoll::is_dropped()`].
+	#[must_use]
+	#[inline]
+	pub const fn is_kept(&self) -> bool {
+		self.dropped_by.is_none()
 	}
 
 	/// Indicates whether this die roll's value has been directly changed by a modifier.
@@ -1043,7 +1059,7 @@ impl Rolled<'_> {
 		let mut sum: u16 = 0;
 
 		// Sum all rolls that haven't been dropped
-		for r in self.rolls.iter().filter(|roll| !roll.is_dropped()) {
+		for r in self.rolls.iter().filter(|roll| roll.is_kept()) {
 			sum = sum
 				.checked_add(u16::from(r.val))
 				.ok_or_else(|| Error::Overflow(self.clone().into_owned()))?;
