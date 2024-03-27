@@ -117,63 +117,66 @@ pub enum Modifier {
 	///
 	/// ## Reroll recursively (`rr`)
 	/// ```
-	/// use std::borrow::Cow;
-	/// use dicey::dice::{Condition, Dice, DieRoll, Rolled, roller::FastRand};
+	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
 	///
-	/// // Dice set: 4d6rr
-	/// let dice = Dice::builder()
-	/// 	.count(4)
-	/// 	.sides(6)
-	/// 	.reroll(Condition::Eq(1), true)
-	/// 	.build();
-	/// // Rolled dice set (before applying modifier): 4d6rr[3, 6, 1, 2]
-	/// let mut rolled = Rolled {
-	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
-	/// 	dice: Cow::Borrowed(&dice),
+	/// // Build the 4d6rr1 dice set and create a roller that has predetermined values for the dice rolls
+	/// let dice = Dice::builder().count(4).sides(6).reroll(Condition::Eq(1), true).build();
+	/// let premade_rolls = [3, 6, 1, 2, 1, 4];
+	/// let mut rng = Iter::new(premade_rolls);
+	///
+	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
+	/// // Only the first four predetermined values will be used for the dice rolls since there are only four dice to roll.
+	/// let mut rolled = dice.roll(&mut rng, false)?;
+	///
+	/// // Explicitly create and apply an rr1 modifier. This is usually not necessary since the dice has its own instance of
+	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
+	/// // for demonstration purposes.
+	/// let rr1_mod = Modifier::Reroll {
+	/// 	cond: Condition::Eq(1),
+	/// 	recurse: true,
 	/// };
+	/// rr1_mod.apply(&mut rolled, &mut rng)?;
 	///
-	/// // Could also use a `Modifier::Reroll` directly rather than getting the modifier from the dice
-	/// let rr_mod = dice.modifiers[0];
-	/// rr_mod.apply(&mut rolled, &mut FastRand::default())?;
-	///
-	/// // Final rolled dice set: 4d6rr[3, 6, 1, 2, x...]
-	/// assert!(rolled.rolls.len() > 4);
-	/// assert_eq!(rolled.rolls[2].dropped_by, Some(rr_mod));
-	/// rolled.rolls.iter().skip(4).for_each(|roll| assert_eq!(roll.added_by, Some(rr_mod)));
-	/// rolled
-	/// 	.rolls
-	/// 	.iter()
-	/// 	.skip(4)
-	/// 	.take(rolled.rolls.len() - 5)
-	/// 	.for_each(|roll| assert_eq!(roll.dropped_by, Some(rr_mod)));
+	/// // Upon being applied, the modifier will drop the 1 roll, roll a new 1 from the predetermined RNG, drop that too,
+	/// // then roll a new 4 from the RNG.
+	/// // Final expected rolled dice set, after rr1 modifier: 4d6rr1[3, 6, 1 (d), 2, 1 (d), 4]
+	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// expected.rolls[2].drop(rr1_mod);
+	/// expected.rolls[4].add(rr1_mod);
+	/// expected.rolls[4].drop(rr1_mod);
+	/// expected.rolls[5].add(rr1_mod);
+	/// assert_eq!(rolled, expected);
 	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	///
 	/// ## Reroll once (`r`)
 	/// ```
-	/// use std::borrow::Cow;
-	/// use dicey::dice::{Condition, Dice, DieRoll, Rolled, roller::FastRand};
+	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
 	///
-	/// // Dice set: 4d6r
-	/// let dice = Dice::builder()
-	/// 	.count(4)
-	/// 	.sides(6)
-	/// 	.reroll(Condition::Eq(1), false)
-	/// 	.build();
-	/// // Rolled dice set (before applying modifier): 4d6r[3, 6, 1, 2]
-	/// let mut rolled = Rolled {
-	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
-	/// 	dice: Cow::Borrowed(&dice),
+	/// // Build the 4d6r1 dice set and create a roller that has predetermined values for the dice rolls
+	/// let dice = Dice::builder().count(4).sides(6).reroll(Condition::Eq(1), false).build();
+	/// let premade_rolls = [3, 6, 1, 2, 1];
+	/// let mut rng = Iter::new(premade_rolls);
+	///
+	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
+	/// // Only the first four predetermined values will be used for the dice rolls since there are only four dice to roll.
+	/// let mut rolled = dice.roll(&mut rng, false)?;
+	///
+	/// // Explicitly create and apply an r1 modifier. This is usually not necessary since the dice has its own instance of
+	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
+	/// // for demonstration purposes.
+	/// let r1_mod = Modifier::Reroll {
+	/// 	cond: Condition::Eq(1),
+	/// 	recurse: false,
 	/// };
+	/// r1_mod.apply(&mut rolled, &mut rng)?;
 	///
-	/// // Could also use a `Modifier::Reroll` directly rather than getting the modifier from the dice
-	/// let r_mod = dice.modifiers[0];
-	/// r_mod.apply(&mut rolled, &mut FastRand::default())?;
-	///
-	/// // Final rolled dice set: 4d6r[3, 6, 1, 2, x]
-	/// assert_eq!(rolled.rolls.len(), 5);
-	/// assert_eq!(rolled.rolls[2].dropped_by, Some(r_mod));
-	/// assert_eq!(rolled.rolls[4].added_by, Some(r_mod));
+	/// // Upon being applied, the modifier will drop the 1 roll and roll a new 1 from the predetermined RNG.
+	/// // Final expected rolled dice set, after r1 modifier: 4d6r1[3, 6, 1 (d), 2, 1]
+	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// expected.rolls[2].drop(r1_mod);
+	/// expected.rolls[4].add(r1_mod);
+	/// assert_eq!(rolled, expected);
 	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	Reroll {
@@ -190,55 +193,63 @@ pub enum Modifier {
 	///
 	/// ## Explode recursively (`x`)
 	/// ```
-	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled, roller::FastRand};
+	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
 	///
-	/// // Dice set: 4d6x
-	/// let dice = Dice::builder()
-	/// 	.count(4)
-	/// 	.sides(6)
-	/// 	.explode(None, true)
-	/// 	.build();
-	/// // Rolled dice set (before applying modifier): 4d6x[3, 6, 1, 2]
-	/// let mut rolled = Rolled {
-	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
-	/// 	dice: Cow::Borrowed(&dice),
+	/// // Build the 4d6x dice set and create a roller that has predetermined values for the dice rolls
+	/// let dice = Dice::builder().count(4).sides(6).explode(None, true).build();
+	/// let premade_rolls = [3, 6, 1, 2, 6, 4];
+	/// let mut rng = Iter::new(premade_rolls);
+	///
+	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
+	/// // Only the first four predetermined values will be used for the dice rolls since there are only four dice to roll.
+	/// let mut rolled = dice.roll(&mut rng, false)?;
+	///
+	/// // Explicitly create and apply an x modifier. This is usually not necessary since the dice has its own instance of
+	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
+	/// // for demonstration purposes.
+	/// let x_mod = Modifier::Explode {
+	/// 	cond: None,
+	/// 	recurse: true,
 	/// };
+	/// x_mod.apply(&mut rolled, &mut rng)?;
 	///
-	/// // Could also use a `Modifier::Explode` directly rather than getting the modifier from the dice
-	/// let x_mod = dice.modifiers[0];
-	/// x_mod.apply(&mut rolled, &mut FastRand::default())?;
-	///
-	/// // Final rolled dice set: 4d6xo[3, 6, 1, 2, x...]
-	/// assert!(rolled.rolls.len() > 4);
-	/// rolled.rolls.iter().skip(4).for_each(|roll| assert_eq!(roll.added_by, Some(x_mod)));
+	/// // Upon being applied, the modifier will see that a 6 (the max die value) was rolled, roll a new additional 6, see
+	/// // that is also the max die value, then roll a new 4 as well.
+	/// // Final expected rolled dice set, after x modifier: 4d6x[3, 6, 1, 2, 6, 4]
+	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// expected.rolls[4].add(x_mod);
+	/// expected.rolls[5].add(x_mod);
+	/// assert_eq!(rolled, expected);
 	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	///
 	/// ## Explode once (`xo`)
 	/// ```
-	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled, roller::FastRand};
+	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
 	///
-	/// // Dice set: 4d6xo
-	/// let dice = Dice::builder()
-	/// 	.count(4)
-	/// 	.sides(6)
-	/// 	.explode(None, false)
-	/// 	.build();
-	/// // Rolled dice set (before applying modifier): 4d6xo[3, 6, 1, 2]
-	/// let mut rolled = Rolled {
-	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
-	/// 	dice: Cow::Borrowed(&dice),
+	/// // Build the 4d6xo dice set and create a roller that has predetermined values for the dice rolls
+	/// let dice = Dice::builder().count(4).sides(6).explode(None, false).build();
+	/// let premade_rolls = [3, 6, 1, 2, 6];
+	/// let mut rng = Iter::new(premade_rolls);
+	///
+	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
+	/// // Only the first four predetermined values will be used for the dice rolls since there are only four dice to roll.
+	/// let mut rolled = dice.roll(&mut rng, false)?;
+	///
+	/// // Explicitly create and apply an xo modifier. This is usually not necessary since the dice has its own instance of
+	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
+	/// // for demonstration purposes.
+	/// let xo_mod = Modifier::Explode {
+	/// 	cond: None,
+	/// 	recurse: false,
 	/// };
+	/// xo_mod.apply(&mut rolled, &mut rng)?;
 	///
-	/// // Could also use a `Modifier::Explode` directly rather than getting the modifier from the dice
-	/// let xo_mod = dice.modifiers[0];
-	/// xo_mod.apply(&mut rolled, &mut FastRand::default())?;
-	///
-	/// // Final rolled dice set: 4d6xo[3, 6, 1, 2, x]
-	/// assert_eq!(rolled.rolls.len(), 5);
-	/// assert_eq!(rolled.rolls[4].added_by, Some(xo_mod));
+	/// // Upon being applied, the modifier will see that a 6 (the max die value) was rolled and roll a new additional 6.
+	/// // Final expected rolled dice set, after xo modifier: 4d6xo[3, 6, 1, 2, 6]
+	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// expected.rolls[4].add(xo_mod);
+	/// assert_eq!(rolled, expected);
 	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	Explode {
@@ -256,95 +267,56 @@ pub enum Modifier {
 	///
 	/// ## Keep highest die (`kh`)
 	/// ```
-	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled, roller::FastRand};
+	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
 	///
-	/// // Dice set: 4d6kh
-	/// let dice = Dice::builder()
-	/// 	.count(4)
-	/// 	.sides(6)
-	/// 	.keep_high(1)
-	/// 	.build();
-	/// // Rolled dice set (before applying modifier): 4d6kh[3, 6, 1, 2]
-	/// let mut rolled = Rolled {
-	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
-	/// 	dice: Cow::Borrowed(&dice),
-	/// };
+	/// // Build the 4d6kh dice set and create a roller that has predetermined values for the dice rolls
+	/// let dice = Dice::builder().count(4).sides(6).keep_high(1).build();
+	/// let premade_rolls = [3, 6, 1, 2];
+	/// let mut rng = Iter::new(premade_rolls);
 	///
-	/// // Could also use a `Modifier::KeepHigh(1)` directly rather than getting the modifier from the dice
-	/// let kh_mod = dice.modifiers[0];
-	/// kh_mod.apply(&mut rolled, &mut FastRand::default())?;
+	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
+	/// let mut rolled = dice.roll(&mut rng, false)?;
 	///
-	/// // Final rolled dice set: 4d6kh[3 (d), 6, 1 (d), 2 (d)]
-	/// assert_eq!(
-	/// 	rolled,
-	/// 	Rolled {
-	/// 		rolls: vec![
-	/// 			{
-	/// 				let mut roll = DieRoll::new(3);
-	/// 				roll.drop(kh_mod);
-	/// 				roll
-	/// 			},
-	/// 			DieRoll::new(6),
-	/// 			{
-	/// 				let mut roll = DieRoll::new(1);
-	/// 				roll.drop(kh_mod);
-	/// 				roll
-	/// 			},
-	/// 			{
-	/// 				let mut roll = DieRoll::new(2);
-	/// 				roll.drop(kh_mod);
-	/// 				roll
-	/// 			},
-	/// 		],
-	/// 		dice: Cow::Borrowed(&dice),
-	/// 	}
-	/// );
+	/// // Explicitly create and apply a kh modifier. This is usually not necessary since the dice has its own instance of
+	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
+	/// // for demonstration purposes.
+	/// let kh_mod = Modifier::KeepHigh(1);
+	/// kh_mod.apply(&mut rolled, &mut rng)?;
+	///
+	/// // Upon being applied, the modifier will drop all rolls except the highest one, so 3, 1, and 2 will be dropped.
+	/// // Final expected rolled dice set, after kh modifier: 4d6kh[3 (d), 6, 1 (d), 2 (d)]
+	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// expected.rolls[0].drop(kh_mod);
+	/// expected.rolls[2].drop(kh_mod);
+	/// expected.rolls[3].drop(kh_mod);
+	/// assert_eq!(rolled, expected);
 	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	///
 	/// ## Keep highest 2 dice (`kh2`)
 	/// ```
-	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled, roller::FastRand};
+	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
 	///
-	/// // Dice set: 4d6kh2
-	/// let dice = Dice::builder()
-	/// 	.count(4)
-	/// 	.sides(6)
-	/// 	.keep_high(2)
-	/// 	.build();
-	/// // Rolled dice set (before applying modifier): 4d6kh2[3, 6, 1, 2]
-	/// let mut rolled = Rolled {
-	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
-	/// 	dice: Cow::Borrowed(&dice),
-	/// };
+	/// // Build the 4d6kh2 dice set and create a roller that has predetermined values for the dice rolls
+	/// let dice = Dice::builder().count(4).sides(6).keep_high(2).build();
+	/// let premade_rolls = [3, 6, 1, 2];
+	/// let mut rng = Iter::new(premade_rolls);
 	///
-	/// // Could also use a `Modifier::KeepHigh(2)` directly rather than getting the modifier from the dice
-	/// let kh2_mod = dice.modifiers[0];
-	/// kh2_mod.apply(&mut rolled, &mut FastRand::default())?;
+	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
+	/// let mut rolled = dice.roll(&mut rng, false)?;
 	///
-	/// // Final rolled dice set: 4d6kh2[3, 6, 1 (d), 2 (d)]
-	/// assert_eq!(
-	/// 	rolled,
-	/// 	Rolled {
-	/// 		rolls: vec![
-	/// 			DieRoll::new(3),
-	/// 			DieRoll::new(6),
-	/// 			{
-	/// 				let mut roll = DieRoll::new(1);
-	/// 				roll.drop(kh2_mod);
-	/// 				roll
-	/// 			},
-	/// 			{
-	/// 				let mut roll = DieRoll::new(2);
-	/// 				roll.drop(kh2_mod);
-	/// 				roll
-	/// 			},
-	/// 		],
-	/// 		dice: Cow::Borrowed(&dice),
-	/// 	}
-	/// );
+	/// // Explicitly create and apply a kh2 modifier. This is usually not necessary since the dice has its own instance of
+	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
+	/// // for demonstration purposes.
+	/// let kh2_mod = Modifier::KeepHigh(2);
+	/// kh2_mod.apply(&mut rolled, &mut rng)?;
+	///
+	/// // Upon being applied, the modifier will drop all rolls except the two highest, so 1 and 2 will be dropped.
+	/// // Final expected rolled dice set, after kh2 modifier: 4d6kh2[3, 6, 1 (d), 2 (d)]
+	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// expected.rolls[2].drop(kh2_mod);
+	/// expected.rolls[3].drop(kh2_mod);
+	/// assert_eq!(rolled, expected);
 	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	KeepHigh(u8),
@@ -355,95 +327,56 @@ pub enum Modifier {
 	///
 	/// ## Keep lowest die (`kl`)
 	/// ```
-	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled, roller::FastRand};
+	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
 	///
-	/// // Dice set: 4d6kl
-	/// let dice = Dice::builder()
-	/// 	.count(4)
-	/// 	.sides(6)
-	/// 	.keep_low(1)
-	/// 	.build();
-	/// // Rolled dice set (before applying modifier): 4d6kl[3, 6, 1, 2]
-	/// let mut rolled = Rolled {
-	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
-	/// 	dice: Cow::Borrowed(&dice),
-	/// };
+	/// // Build the 4d6kl dice set and create a roller that has predetermined values for the dice rolls
+	/// let dice = Dice::builder().count(4).sides(6).keep_low(1).build();
+	/// let premade_rolls = [3, 6, 1, 2];
+	/// let mut rng = Iter::new(premade_rolls);
 	///
-	/// // Could also use a `Modifier::KeepLow(1)` directly rather than getting the modifier from the dice
-	/// let kl_mod = dice.modifiers[0];
-	/// kl_mod.apply(&mut rolled, &mut FastRand::default())?;
+	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
+	/// let mut rolled = dice.roll(&mut rng, false)?;
 	///
-	/// // Final rolled dice set: 4d6kl[3 (d), 6 (d), 1, 2 (d)]
-	/// assert_eq!(
-	/// 	rolled,
-	/// 	Rolled {
-	/// 		rolls: vec![
-	/// 			{
-	/// 				let mut roll = DieRoll::new(3);
-	/// 				roll.drop(kl_mod);
-	/// 				roll
-	/// 			},
-	/// 			{
-	/// 				let mut roll = DieRoll::new(6);
-	/// 				roll.drop(kl_mod);
-	/// 				roll
-	/// 			},
-	/// 			DieRoll::new(1),
-	/// 			{
-	/// 				let mut roll = DieRoll::new(2);
-	/// 				roll.drop(kl_mod);
-	/// 				roll
-	/// 			},
-	/// 		],
-	/// 		dice: Cow::Borrowed(&dice),
-	/// 	}
-	/// );
+	/// // Explicitly create and apply a kl modifier. This is usually not necessary since the dice has its own instance of
+	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
+	/// // for demonstration purposes.
+	/// let kl_mod = Modifier::KeepLow(1);
+	/// kl_mod.apply(&mut rolled, &mut rng)?;
+	///
+	/// // Upon being applied, the modifier will drop all rolls except the lowest one, so 3, 6, and 2 will be dropped.
+	/// // Final expected rolled dice set, after kl modifier: 4d6kl[3 (d), 6 (d), 1, 2 (d)]
+	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// expected.rolls[0].drop(kl_mod);
+	/// expected.rolls[1].drop(kl_mod);
+	/// expected.rolls[3].drop(kl_mod);
+	/// assert_eq!(rolled, expected);
 	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	///
 	/// ## Keep lowest 2 dice (`kl2`)
 	/// ```
-	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled, roller::FastRand};
+	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
 	///
-	/// // Dice set: 4d6kl2
-	/// let dice = Dice::builder()
-	/// 	.count(4)
-	/// 	.sides(6)
-	/// 	.keep_low(2)
-	/// 	.build();
-	/// // Rolled dice set (before applying modifier): 4d6kl2[3, 6, 1, 2]
-	/// let mut rolled = Rolled {
-	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
-	/// 	dice: Cow::Borrowed(&dice),
-	/// };
+	/// // Build the 4d6kl2 dice set and create a roller that has predetermined values for the dice rolls
+	/// let dice = Dice::builder().count(4).sides(6).keep_low(2).build();
+	/// let premade_rolls = [3, 6, 1, 2];
+	/// let mut rng = Iter::new(premade_rolls);
 	///
-	/// // Could also use a `Modifier::KeepLow(2)` directly rather than getting the modifier from the dice
-	/// let kl2_mod = dice.modifiers[0];
-	/// kl2_mod.apply(&mut rolled, &mut FastRand::default())?;
+	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
+	/// let mut rolled = dice.roll(&mut rng, false)?;
 	///
-	/// // Final rolled dice set: 4d6kl2[3 (d), 6 (d), 1, 2]
-	/// assert_eq!(
-	/// 	rolled,
-	/// 	Rolled {
-	/// 		rolls: vec![
-	/// 			{
-	/// 				let mut roll = DieRoll::new(3);
-	/// 				roll.drop(kl2_mod);
-	/// 				roll
-	/// 			},
-	/// 			{
-	/// 				let mut roll = DieRoll::new(6);
-	/// 				roll.drop(kl2_mod);
-	/// 				roll
-	/// 			},
-	/// 			DieRoll::new(1),
-	/// 			DieRoll::new(2),
-	/// 		],
-	/// 		dice: Cow::Borrowed(&dice),
-	/// 	}
-	/// );
+	/// // Explicitly create and apply a kl2 modifier. This is usually not necessary since the dice has its own instance of
+	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
+	/// // for demonstration purposes.
+	/// let kl2_mod = Modifier::KeepLow(2);
+	/// kl2_mod.apply(&mut rolled, &mut rng)?;
+	///
+	/// // Upon being applied, the modifier will drop all rolls except the two lowest, so 3 and 6 will be dropped.
+	/// // Final expected rolled dice set, after kl2 modifier: 4d6kl2[3 (d), 6 (d), 1, 2]
+	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// expected.rolls[0].drop(kl2_mod);
+	/// expected.rolls[1].drop(kl2_mod);
+	/// assert_eq!(rolled, expected);
 	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	KeepLow(u8),
@@ -452,54 +385,29 @@ pub enum Modifier {
 	///
 	/// # Examples
 	/// ```
-	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled, ValChange, roller::FastRand};
+	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
 	///
-	/// // Dice set: 4d6min3
-	/// let dice = Dice::builder()
-	/// 	.count(4)
-	/// 	.sides(6)
-	/// 	.min(3)
-	/// 	.build();
-	/// // Rolled dice set (before applying modifier): 4d6min3[3, 6, 1, 2]
-	/// let mut rolled = Rolled {
-	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
-	/// 	dice: Cow::Borrowed(&dice),
-	/// };
+	/// // Build the 4d6min3 dice set and create a roller that has predetermined values for the dice rolls
+	/// let dice = Dice::builder().count(4).sides(6).min(3).build();
+	/// let premade_rolls = [3, 6, 1, 2];
+	/// let mut rng = Iter::new(premade_rolls);
 	///
-	/// // Could also use a `Modifier::Min(3)` directly rather than getting the modifier from the dice
-	/// let min_mod = dice.modifiers[0];
-	/// min_mod.apply(&mut rolled, &mut FastRand::default())?;
+	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
+	/// let mut rolled = dice.roll(&mut rng, false)?;
 	///
-	/// // Final rolled dice set: 4d6min3[3, 6, 3 (m), 3 (m)]
-	/// assert_eq!(
-	/// 	rolled,
-	/// 	Rolled {
-	/// 		rolls: vec![
-	/// 			DieRoll::new(3),
-	/// 			DieRoll::new(6),
-	/// 			{
-	/// 				let mut roll = DieRoll::new(3);
-	/// 				roll.changes.push(ValChange {
-	/// 					before: 1,
-	/// 					after: 3,
-	/// 					cause: min_mod,
-	/// 				});
-	/// 				roll
-	/// 			},
-	/// 			{
-	/// 				let mut roll = DieRoll::new(3);
-	/// 				roll.changes.push(ValChange {
-	/// 					before: 2,
-	/// 					after: 3,
-	/// 					cause: min_mod,
-	/// 				});
-	/// 				roll
-	/// 			},
-	/// 		],
-	/// 		dice: Cow::Borrowed(&dice),
-	/// 	}
-	/// );
+	/// // Explicitly create and apply a min3 modifier. This is usually not necessary since the dice has its own instance of
+	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
+	/// // for demonstration purposes.
+	/// let min3_mod = Modifier::Min(3);
+	/// min3_mod.apply(&mut rolled, &mut rng)?;
+	///
+	/// // Upon being applied, the modifier will replace the values of all rolls less than 3 with 3, so 1 and 2 will
+	/// // both become 3.
+	/// // Final expected rolled dice set, after min3 modifier: 4d6min3[3, 6, 3 (m), 3 (m)]
+	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// expected.rolls[2].change(min3_mod, 3);
+	/// expected.rolls[3].change(min3_mod, 3);
+	/// assert_eq!(rolled, expected);
 	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	Min(u8),
@@ -508,46 +416,27 @@ pub enum Modifier {
 	///
 	/// # Examples
 	/// ```
-	/// use std::borrow::Cow;
-	/// use dicey::dice::{Dice, DieRoll, Rolled, ValChange, roller::FastRand};
+	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
 	///
-	/// // Dice set: 4d6max3
-	/// let dice = Dice::builder()
-	/// 	.count(4)
-	/// 	.sides(6)
-	/// 	.max(3)
-	/// 	.build();
-	/// // Rolled dice set (before applying modifier): 4d6max3[3, 6, 1, 2]
-	/// let mut rolled = Rolled {
-	/// 	rolls: vec![DieRoll::new(3), DieRoll::new(6), DieRoll::new(1), DieRoll::new(2)],
-	/// 	dice: Cow::Borrowed(&dice),
-	/// };
+	/// // Build the 4d6max3 dice set and create a roller that has predetermined values for the dice rolls
+	/// let dice = Dice::builder().count(4).sides(6).max(3).build();
+	/// let premade_rolls = [3, 6, 1, 2];
+	/// let mut rng = Iter::new(premade_rolls);
 	///
-	/// // Could also use a `Modifier::Max(3)` directly rather than getting the modifier from the dice
-	/// let max_mod = dice.modifiers[0];
-	/// max_mod.apply(&mut rolled, &mut FastRand::default())?;
+	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
+	/// let mut rolled = dice.roll(&mut rng, false)?;
 	///
-	/// // Final rolled dice set: 4d6max3[3, 3 (m), 1, 2]
-	/// assert_eq!(
-	/// 	rolled,
-	/// 	Rolled {
-	/// 		rolls: vec![
-	/// 			DieRoll::new(3),
-	/// 			{
-	/// 				let mut roll = DieRoll::new(3);
-	/// 				roll.changes.push(ValChange {
-	/// 					before: 6,
-	/// 					after: 3,
-	/// 					cause: max_mod,
-	/// 				});
-	/// 				roll
-	/// 			},
-	/// 			DieRoll::new(1),
-	/// 			DieRoll::new(2),
-	/// 		],
-	/// 		dice: Cow::Borrowed(&dice),
-	/// 	}
-	/// );
+	/// // Explicitly create and apply a max3 modifier. This is usually not necessary since the dice has its own instance of
+	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
+	/// // for demonstration purposes.
+	/// let max3_mod = Modifier::Max(3);
+	/// max3_mod.apply(&mut rolled, &mut rng)?;
+	///
+	/// // Upon being applied, the modifier will replace the values of all rolls greater than 3 with 3, so 6 will become 3.
+	/// // Final expected rolled dice set, after max3 modifier: 4d6max3[3, 3 (m), 1, 2]
+	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// expected.rolls[1].change(max3_mod, 3);
+	/// assert_eq!(rolled, expected);
 	/// # Ok::<(), dicey::dice::Error>(())
 	/// ```
 	Max(u8),
@@ -748,14 +637,7 @@ impl Modifier {
 			.rolls
 			.iter_mut()
 			.filter(|roll| roll.is_kept() && roll.val < min)
-			.for_each(|roll| {
-				roll.changes.push(ValChange {
-					before: roll.val,
-					after: min,
-					cause: self,
-				});
-				roll.val = min;
-			});
+			.for_each(|roll| roll.change(self, min));
 	}
 
 	/// Applies the [`Self::Max`] variant to a set of rolled dice.
@@ -764,14 +646,7 @@ impl Modifier {
 			.rolls
 			.iter_mut()
 			.filter(|roll| roll.is_kept() && roll.val > max)
-			.for_each(|roll| {
-				roll.changes.push(ValChange {
-					before: roll.val,
-					after: max,
-					cause: self,
-				});
-				roll.val = max;
-			});
+			.for_each(|roll| roll.change(self, max));
 	}
 }
 
@@ -918,6 +793,16 @@ impl DieRoll {
 			"marking a die as dropped that has already been marked as dropped by another modifier"
 		);
 		self.dropped_by = Some(from);
+	}
+
+	/// Replaces the die roll's value and logs the change made.
+	pub fn change(&mut self, from: Modifier, new_val: u8) {
+		self.changes.push(ValChange {
+			before: self.val,
+			after: new_val,
+			cause: from,
+		});
+		self.val = new_val;
 	}
 
 	/// Indicates whether this die roll was part of the original set (not added by a modifier).
