@@ -8,6 +8,7 @@ fn main() {
 
 	use ariadne::{ColorGenerator, Label, Report, ReportKind, Source};
 	use chumsky::Parser;
+	use dicey::{dice::roller::FastRand, parser};
 
 	let args = env::args();
 	let input = if args.len() > 1 {
@@ -30,7 +31,7 @@ fn main() {
 	println!("\x1b[1m\x1b[36mInput:\x1b[0m {}", input);
 
 	// Parse the input
-	let parsed = dicey::parser().parse(&input);
+	let parsed = parser().parse(&input);
 	let expr = if !parsed.has_errors() {
 		parsed.into_output().expect("no output from parser without errors")
 	} else {
@@ -51,7 +52,8 @@ fn main() {
 	};
 
 	// Evaluate the expression
-	let evaled = match expr.eval() {
+	let mut rng = FastRand::default();
+	let evaled = match expr.eval(&mut rng) {
 		Ok(evaled) => evaled,
 		Err(err) => {
 			eprintln!("\x1b[1m\x1b[31mEvaluation error:\x1b[0m {err}");
