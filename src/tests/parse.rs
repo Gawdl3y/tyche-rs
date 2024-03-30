@@ -128,7 +128,7 @@ fn dice_keep_low_2() {
 #[test]
 fn invalid_token() {
 	let bigboi = i32::MAX as i64 + 1;
-	let expr = format!("{}", bigboi);
+	let expr = bigboi.to_string();
 	let ast = expr_parser().parse(&expr);
 	assert!(ast.has_errors());
 }
