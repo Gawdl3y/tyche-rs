@@ -28,39 +28,6 @@ pub struct Dice {
 }
 
 impl Dice {
-	/// Rolls the dice and applies all of its modifiers to the rolls using the given roller.
-	///
-	/// # Errors
-	/// If any errors are encountered while applying the dice's modifiers, an error variant is returned.
-	pub fn roll(&self, rng: &mut impl Roller, apply_mods: bool) -> Result<Rolled, Error> {
-		// Roll the dice!
-		let mut rolls = Vec::with_capacity(self.count as usize);
-		for _ in 0..self.count {
-			rolls.push(self.roll_single(rng));
-		}
-		let mut rolled = Rolled {
-			rolls,
-			dice: Cow::Borrowed(self),
-		};
-
-		// Apply all modifiers
-		if apply_mods {
-			for modifier in &self.modifiers {
-				modifier.apply(&mut rolled, rng)?;
-			}
-		}
-
-		Ok(rolled)
-	}
-
-	/// Rolls a single die (with the same number of sides as the dice in this set)
-	/// with no modifiers using the given roller.
-	#[must_use]
-	#[inline]
-	pub fn roll_single(&self, rng: &mut impl Roller) -> DieRoll {
-		rng.roll(self.sides)
-	}
-
 	/// Creates a new set of dice matching this one but without any modifiers.
 	#[must_use]
 	#[inline]
@@ -117,7 +84,7 @@ pub enum Modifier {
 	///
 	/// ## Reroll recursively (`rr`)
 	/// ```
-	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
+	/// use dicey::dice::{roller::{Iter, Roller}, Condition, Dice, Modifier, Rolled};
 	///
 	/// // Build the 4d6rr1 dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).reroll(Condition::Eq(1), true).build();
@@ -126,7 +93,7 @@ pub enum Modifier {
 	///
 	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
 	/// // Only the first four predetermined values will be used for the dice rolls since there are only four dice to roll.
-	/// let mut rolled = dice.roll(&mut rng, false)?;
+	/// let mut rolled = rng.roll(&dice, false)?;
 	///
 	/// // Explicitly create and apply an rr1 modifier. This is usually not necessary since the dice has its own instance of
 	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
@@ -151,7 +118,7 @@ pub enum Modifier {
 	///
 	/// ## Reroll once (`r`)
 	/// ```
-	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
+	/// use dicey::dice::{roller::{Iter, Roller}, Condition, Dice, Modifier, Rolled};
 	///
 	/// // Build the 4d6r1 dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).reroll(Condition::Eq(1), false).build();
@@ -160,7 +127,7 @@ pub enum Modifier {
 	///
 	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
 	/// // Only the first four predetermined values will be used for the dice rolls since there are only four dice to roll.
-	/// let mut rolled = dice.roll(&mut rng, false)?;
+	/// let mut rolled = rng.roll(&dice, false)?;
 	///
 	/// // Explicitly create and apply an r1 modifier. This is usually not necessary since the dice has its own instance of
 	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
@@ -193,7 +160,7 @@ pub enum Modifier {
 	///
 	/// ## Explode recursively (`x`)
 	/// ```
-	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
+	/// use dicey::dice::{roller::{Iter, Roller}, Condition, Dice, Modifier, Rolled};
 	///
 	/// // Build the 4d6x dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).explode(None, true).build();
@@ -202,7 +169,7 @@ pub enum Modifier {
 	///
 	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
 	/// // Only the first four predetermined values will be used for the dice rolls since there are only four dice to roll.
-	/// let mut rolled = dice.roll(&mut rng, false)?;
+	/// let mut rolled = rng.roll(&dice, false)?;
 	///
 	/// // Explicitly create and apply an x modifier. This is usually not necessary since the dice has its own instance of
 	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
@@ -225,7 +192,7 @@ pub enum Modifier {
 	///
 	/// ## Explode once (`xo`)
 	/// ```
-	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
+	/// use dicey::dice::{roller::{Iter, Roller}, Condition, Dice, Modifier, Rolled};
 	///
 	/// // Build the 4d6xo dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).explode(None, false).build();
@@ -234,7 +201,7 @@ pub enum Modifier {
 	///
 	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
 	/// // Only the first four predetermined values will be used for the dice rolls since there are only four dice to roll.
-	/// let mut rolled = dice.roll(&mut rng, false)?;
+	/// let mut rolled = rng.roll(&dice, false)?;
 	///
 	/// // Explicitly create and apply an xo modifier. This is usually not necessary since the dice has its own instance of
 	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
@@ -267,7 +234,7 @@ pub enum Modifier {
 	///
 	/// ## Keep highest die (`kh`)
 	/// ```
-	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
+	/// use dicey::dice::{roller::{Iter, Roller}, Condition, Dice, Modifier, Rolled};
 	///
 	/// // Build the 4d6kh dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).keep_high(1).build();
@@ -275,7 +242,7 @@ pub enum Modifier {
 	/// let mut rng = Iter::new(premade_rolls);
 	///
 	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
-	/// let mut rolled = dice.roll(&mut rng, false)?;
+	/// let mut rolled = rng.roll(&dice, false)?;
 	///
 	/// // Explicitly create and apply a kh modifier. This is usually not necessary since the dice has its own instance of
 	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
@@ -295,7 +262,7 @@ pub enum Modifier {
 	///
 	/// ## Keep highest 2 dice (`kh2`)
 	/// ```
-	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
+	/// use dicey::dice::{roller::{Iter, Roller}, Condition, Dice, Modifier, Rolled};
 	///
 	/// // Build the 4d6kh2 dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).keep_high(2).build();
@@ -303,7 +270,7 @@ pub enum Modifier {
 	/// let mut rng = Iter::new(premade_rolls);
 	///
 	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
-	/// let mut rolled = dice.roll(&mut rng, false)?;
+	/// let mut rolled = rng.roll(&dice, false)?;
 	///
 	/// // Explicitly create and apply a kh2 modifier. This is usually not necessary since the dice has its own instance of
 	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
@@ -327,7 +294,7 @@ pub enum Modifier {
 	///
 	/// ## Keep lowest die (`kl`)
 	/// ```
-	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
+	/// use dicey::dice::{roller::{Iter, Roller}, Condition, Dice, Modifier, Rolled};
 	///
 	/// // Build the 4d6kl dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).keep_low(1).build();
@@ -335,7 +302,7 @@ pub enum Modifier {
 	/// let mut rng = Iter::new(premade_rolls);
 	///
 	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
-	/// let mut rolled = dice.roll(&mut rng, false)?;
+	/// let mut rolled = rng.roll(&dice, false)?;
 	///
 	/// // Explicitly create and apply a kl modifier. This is usually not necessary since the dice has its own instance of
 	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
@@ -355,7 +322,7 @@ pub enum Modifier {
 	///
 	/// ## Keep lowest 2 dice (`kl2`)
 	/// ```
-	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
+	/// use dicey::dice::{roller::{Iter, Roller}, Condition, Dice, Modifier, Rolled};
 	///
 	/// // Build the 4d6kl2 dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).keep_low(2).build();
@@ -363,7 +330,7 @@ pub enum Modifier {
 	/// let mut rng = Iter::new(premade_rolls);
 	///
 	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
-	/// let mut rolled = dice.roll(&mut rng, false)?;
+	/// let mut rolled = rng.roll(&dice, false)?;
 	///
 	/// // Explicitly create and apply a kl2 modifier. This is usually not necessary since the dice has its own instance of
 	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
@@ -385,7 +352,7 @@ pub enum Modifier {
 	///
 	/// # Examples
 	/// ```
-	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
+	/// use dicey::dice::{roller::{Iter, Roller}, Condition, Dice, Modifier, Rolled};
 	///
 	/// // Build the 4d6min3 dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).min(3).build();
@@ -393,7 +360,7 @@ pub enum Modifier {
 	/// let mut rng = Iter::new(premade_rolls);
 	///
 	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
-	/// let mut rolled = dice.roll(&mut rng, false)?;
+	/// let mut rolled = rng.roll(&dice, false)?;
 	///
 	/// // Explicitly create and apply a min3 modifier. This is usually not necessary since the dice has its own instance of
 	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
@@ -416,7 +383,7 @@ pub enum Modifier {
 	///
 	/// # Examples
 	/// ```
-	/// use dicey::dice::{roller::Iter, Condition, Dice, Modifier, Rolled};
+	/// use dicey::dice::{roller::{Iter, Roller}, Condition, Dice, Modifier, Rolled};
 	///
 	/// // Build the 4d6max3 dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).max(3).build();
@@ -424,7 +391,7 @@ pub enum Modifier {
 	/// let mut rng = Iter::new(premade_rolls);
 	///
 	/// // Roll the dice, but don't have it automatically apply its modifiers (passing `false` as the second `roll()` param).
-	/// let mut rolled = dice.roll(&mut rng, false)?;
+	/// let mut rolled = rng.roll(&dice, false)?;
 	///
 	/// // Explicitly create and apply a max3 modifier. This is usually not necessary since the dice has its own instance of
 	/// // it from the builder and will automatically apply it when passing `true` to `roll()`, but we do it this way here
@@ -519,7 +486,7 @@ impl Modifier {
 			// Roll additional dice and drop the originals
 			let mut rerolls = Vec::with_capacity(to_reroll.len());
 			for roll in &mut to_reroll {
-				let mut reroll = rolled.dice.roll_single(rng);
+				let mut reroll = rng.roll_die(rolled.dice.sides);
 				reroll.add(self);
 				rerolls.push(reroll);
 				roll.drop(self);
@@ -581,7 +548,7 @@ impl Modifier {
 			// Roll additional dice
 			let mut explosions = Vec::with_capacity(to_explode);
 			for _ in 0..to_explode {
-				let mut roll = rolled.dice.roll_single(rng);
+				let mut roll = rng.roll_die(rolled.dice.sides);
 				roll.add(self);
 				explosions.push(roll);
 			}
@@ -932,10 +899,10 @@ impl Rolled<'_> {
 	///
 	/// # Examples
 	/// ```
-	/// use dicey::dice::{Dice, roller::FastRand};
+	/// use dicey::dice::{Dice, roller::{FastRand, Roller}};
 	///
 	/// let dice = Dice::new(4, 8);
-	/// let rolled = dice.roll(&mut FastRand::default(), true)?;
+	/// let rolled = FastRand::default().roll(&dice, true)?;
 	/// let total = rolled.total()?;
 	/// assert_eq!(total, rolled.rolls.iter().map(|roll| roll.val as u16).sum());
 	/// # Ok::<(), dicey::dice::Error>(())
@@ -1057,10 +1024,10 @@ pub enum Error {
 	///
 	/// # Examples
 	/// ```
-	/// use dicey::dice::{Dice, Error, roller::FastRand};
+	/// use dicey::dice::{Dice, Error, roller::{FastRand, Roller}};
 	///
 	/// let dice = Dice::builder().count(4).sides(1).explode(None, true).build();
-	/// assert!(matches!(dice.roll(&mut FastRand::default(), true), Err(Error::InfiniteRolls(..))));
+	/// assert!(matches!(FastRand::default().roll(&dice, true), Err(Error::InfiniteRolls(..))));
 	/// ```
 	#[error("{0} would result in infinite rolls")]
 	InfiniteRolls(Dice),

@@ -80,7 +80,7 @@ impl Expr {
 	pub fn eval(&self, rng: &mut impl Roller) -> Result<Evaled, EvalError> {
 		Ok(match self {
 			Self::Num(x) => Evaled::Num(*x),
-			Self::Dice(dice) => Evaled::Dice(dice.roll(rng, true).map_err(|err| EvalError::Dice(self.clone(), err))?),
+			Self::Dice(dice) => Evaled::Dice(rng.roll(dice, true).map_err(|err| EvalError::Dice(self.clone(), err))?),
 
 			Self::Neg(x) => Evaled::Neg(Box::new(x.eval(rng)?)),
 

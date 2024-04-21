@@ -1,17 +1,47 @@
 //! Abstractions for rolling [`DieRoll`]s using various means.
 
-use std::iter::Peekable;
+use std::{borrow::Cow, iter::Peekable};
 
 #[cfg(feature = "fastrand")]
 use fastrand::Rng;
 
-use super::DieRoll;
+use super::{Dice, DieRoll, Error, Rolled};
 
-/// Trait to reliably roll [`DieRoll`]s
+/// Rolls dice - what else is there to say?
 pub trait Roller {
 	/// Rolls a single die.
 	#[must_use]
-	fn roll(&mut self, sides: u8) -> DieRoll;
+	fn roll_die(&mut self, sides: u8) -> DieRoll;
+
+	/// Rolls a set of dice and optionally applies all of its modifiers to the rolls.
+	///
+	/// # Errors
+	/// If any errors are encountered while applying the dice's modifiers, an error variant is returned.
+	fn roll<'d, 'r>(&mut self, dice: &'d Dice, apply_mods: bool) -> Result<Rolled<'r>, Error>
+	where
+		'd: 'r,
+		Self: Sized,
+	{
+		// Roll the dice!
+		let mut rolls = Vec::with_capacity(dice.count as usize);
+		for _ in 0..dice.count {
+			rolls.push(self.roll_die(dice.sides));
+		}
+
+		let mut rolled = Rolled {
+			rolls,
+			dice: Cow::Borrowed(dice),
+		};
+
+		// Apply all of the dice's modifiers
+		if apply_mods {
+			for modifier in &dice.modifiers {
+				modifier.apply(&mut rolled, self)?;
+			}
+		}
+
+		Ok(rolled)
+	}
 }
 
 /// Generates rolls with random values using [fastrand]. Requires the `fastrand` feature (enabled by default).
@@ -20,24 +50,24 @@ pub trait Roller {
 ///
 /// ## Default fastrand roller
 /// ```
-/// use dicey::dice::{Dice, roller::FastRand};
+/// use dicey::dice::{Dice, roller::{FastRand, Roller}};
 ///
 /// let mut roller = FastRand::default();
 /// let dice = Dice::new(4, 6);
-/// let _ = dice.roll(&mut roller, true)?;
-/// let _ = dice.roll(&mut roller, true)?;
+/// let _ = roller.roll(&dice, true)?;
+/// let _ = roller.roll(&dice, true)?;
 /// # Ok::<(), dicey::dice::Error>(())
 /// ```
 ///
 /// ## Custom fastrand roller (seeded)
 /// ```
-/// use dicey::dice::{Dice, roller::FastRand};
+/// use dicey::dice::{Dice, roller::{FastRand, Roller}};
 /// use fastrand::Rng;
 ///
 /// let mut roller = FastRand::new(Rng::with_seed(0xef6f79ed30ba75a));
 /// let dice = Dice::new(4, 6);
-/// let _ = dice.roll(&mut roller, true)?;
-/// let _ = dice.roll(&mut roller, true)?;
+/// let _ = roller.roll(&dice, true)?;
+/// let _ = roller.roll(&dice, true)?;
 /// # Ok::<(), dicey::dice::Error>(())
 /// ```
 #[cfg(feature = "fastrand")]
@@ -58,7 +88,7 @@ impl FastRand {
 impl Roller for FastRand {
 	/// Rolls a single die using the [`fastrand::Rng`] the roller was created with.
 	#[inline]
-	fn roll(&mut self, sides: u8) -> DieRoll {
+	fn roll_die(&mut self, sides: u8) -> DieRoll {
 		DieRoll::new(self.0.u8(1..=sides))
 	}
 }
@@ -67,16 +97,16 @@ impl Roller for FastRand {
 ///
 /// # Examples
 /// ```
-/// use dicey::dice::{Dice, roller::Val};
+/// use dicey::dice::{Dice, roller::{Roller, Val}};
 ///
 /// let mut roller = Val(42);
 ///
 /// let dice = Dice::new(4, 6);
-/// let rolled = dice.roll(&mut roller, true)?;
+/// let rolled = roller.roll(&dice, true)?;
 /// assert!(rolled.rolls.iter().all(|roll| roll.val == 42));
 ///
 /// let dice = Dice::new(2, 20);
-/// let rolled = dice.roll(&mut roller, true)?;
+/// let rolled = roller.roll(&dice, true)?;
 /// assert!(rolled.rolls.iter().all(|roll| roll.val == 42));
 /// # Ok::<(), dicey::dice::Error>(())
 /// ```
@@ -87,7 +117,7 @@ pub struct Val(pub u8);
 impl Roller for Val {
 	/// Rolls a single die, always with one specific value.
 	#[inline]
-	fn roll(&mut self, _sides: u8) -> DieRoll {
+	fn roll_die(&mut self, _sides: u8) -> DieRoll {
 		DieRoll::new(self.0)
 	}
 }
@@ -96,16 +126,16 @@ impl Roller for Val {
 ///
 /// # Examples
 /// ```
-/// use dicey::dice::{Dice, roller::Max};
+/// use dicey::dice::{Dice, roller::{Max, Roller}};
 ///
 /// let mut roller = Max;
 ///
 /// let dice = Dice::new(4, 6);
-/// let rolled = dice.roll(&mut roller, true)?;
+/// let rolled = roller.roll(&dice, true)?;
 /// assert!(rolled.rolls.iter().all(|roll| roll.val == 6));
 ///
 /// let dice = Dice::new(2, 20);
-/// let rolled = dice.roll(&mut roller, true)?;
+/// let rolled = roller.roll(&dice, true)?;
 /// assert!(rolled.rolls.iter().all(|roll| roll.val == 20));
 /// # Ok::<(), dicey::dice::Error>(())
 /// ```
@@ -116,7 +146,7 @@ pub struct Max;
 impl Roller for Max {
 	/// Rolls a single die, always with the max value (same as the number of sides).
 	#[inline]
-	fn roll(&mut self, sides: u8) -> DieRoll {
+	fn roll_die(&mut self, sides: u8) -> DieRoll {
 		DieRoll::new(sides)
 	}
 }
@@ -147,7 +177,7 @@ impl<I: Iterator<Item = u8>> Roller for Iter<I> {
 	/// If the iterator has finished, this will panic.
 	#[inline]
 	#[allow(clippy::expect_used)]
-	fn roll(&mut self, _sides: u8) -> DieRoll {
+	fn roll_die(&mut self, _sides: u8) -> DieRoll {
 		DieRoll::new(self.0.next().expect("iterator is finished"))
 	}
 }
