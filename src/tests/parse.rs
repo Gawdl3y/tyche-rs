@@ -1,7 +1,7 @@
 use chumsky::Parser;
 
 use crate::{
-	dice::{Condition, Dice},
+	dice::{modifier::Condition, Dice},
 	expr::Expr,
 	parse::{dice as dice_parser, expr as expr_parser},
 };

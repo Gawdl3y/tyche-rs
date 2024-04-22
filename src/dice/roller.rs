@@ -50,9 +50,9 @@ pub trait Roller {
 ///
 /// ## Default fastrand roller
 /// ```
-/// use dicey::dice::{Dice, roller::{FastRand, Roller}};
+/// use dicey::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice};
 ///
-/// let mut roller = FastRand::default();
+/// let mut roller = FastRandRoller::default();
 /// let dice = Dice::new(4, 6);
 /// let _ = roller.roll(&dice, true)?;
 /// let _ = roller.roll(&dice, true)?;
@@ -61,10 +61,10 @@ pub trait Roller {
 ///
 /// ## Custom fastrand roller (seeded)
 /// ```
-/// use dicey::dice::{Dice, roller::{FastRand, Roller}};
+/// use dicey::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice};
 /// use fastrand::Rng;
 ///
-/// let mut roller = FastRand::new(Rng::with_seed(0xef6f79ed30ba75a));
+/// let mut roller = FastRandRoller::new(Rng::with_seed(0xef6f79ed30ba75a));
 /// let dice = Dice::new(4, 6);
 /// let _ = roller.roll(&dice, true)?;
 /// let _ = roller.roll(&dice, true)?;
@@ -97,9 +97,9 @@ impl Roller for FastRand {
 ///
 /// # Examples
 /// ```
-/// use dicey::dice::{Dice, roller::{Roller, Val}};
+/// use dicey::dice::{roller::{Roller, Val as ValRoller}, Dice};
 ///
-/// let mut roller = Val(42);
+/// let mut roller = ValRoller(42);
 ///
 /// let dice = Dice::new(4, 6);
 /// let rolled = roller.roll(&dice, true)?;
@@ -126,9 +126,9 @@ impl Roller for Val {
 ///
 /// # Examples
 /// ```
-/// use dicey::dice::{Dice, roller::{Max, Roller}};
+/// use dicey::dice::{roller::{Max as MaxRoller, Roller}, Dice};
 ///
-/// let mut roller = Max;
+/// let mut roller = MaxRoller;
 ///
 /// let dice = Dice::new(4, 6);
 /// let rolled = roller.roll(&dice, true)?;

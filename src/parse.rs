@@ -11,7 +11,7 @@
 //!
 //! ## Parsing Dice
 //! ```
-//! use dicey::dice::Dice;
+//! use dicey::Dice;
 //!
 //! let dice: Dice = "6d8x".parse()?;
 //! assert_eq!(dice, Dice::builder().count(6).sides(8).explode(None, true).build());
@@ -20,7 +20,7 @@
 //!
 //! ## Parsing expressions
 //! ```
-//! use dicey::{dice::Dice, expr::Expr};
+//! use dicey::{Dice, Expr};
 //!
 //! let expr: Expr = "6d8x + 4d6 - 3".parse()?;
 //! assert_eq!(
@@ -43,7 +43,10 @@ use std::{fmt, str};
 use chumsky::prelude::*;
 
 use crate::{
-	dice::{Condition, Dice, Modifier},
+	dice::{
+		modifier::{Condition, Modifier},
+		Dice,
+	},
 	expr::Expr,
 };
 

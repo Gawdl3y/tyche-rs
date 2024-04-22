@@ -68,5 +68,8 @@ pub mod parse;
 #[cfg(feature = "parse")]
 pub use parse::expr as parser;
 
+pub use dice::Dice;
+pub use expr::Expr;
+
 #[cfg(test)]
 mod tests;

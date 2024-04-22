@@ -8,7 +8,7 @@ fn main() {
 
 	use ariadne::{ColorGenerator, Label, Report, ReportKind, Source};
 	use chumsky::Parser;
-	use dicey::{dice::roller::FastRand, parser};
+	use dicey::{dice::roller::FastRand as FastRandRoller, parser};
 
 	let args = env::args();
 	let input = if args.len() > 1 {
@@ -52,7 +52,7 @@ fn main() {
 	};
 
 	// Evaluate the expression
-	let mut rng = FastRand::default();
+	let mut rng = FastRandRoller::default();
 	let evaled = match expr.eval(&mut rng) {
 		Ok(evaled) => evaled,
 		Err(err) => {
