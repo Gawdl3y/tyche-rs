@@ -553,7 +553,7 @@ impl Modifier {
 				explosions.push(roll);
 			}
 
-			// Determine how many additional rolls qualify for explosion, then add the explosions to the rolls
+			// Determine how many additional rolls qualify for explosion
 			to_explode = recurse
 				.then(|| {
 					explosions
@@ -565,8 +565,9 @@ impl Modifier {
 						.count()
 				})
 				.unwrap_or(0);
-			rolled.rolls.append(&mut explosions);
 
+			// Add the explosions to the rolls and finish if there are no further rolls to explode
+			rolled.rolls.append(&mut explosions);
 			if to_explode == 0 {
 				break;
 			}
