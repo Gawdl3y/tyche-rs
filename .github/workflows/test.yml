@@ -14,6 +14,8 @@ jobs:
 
       - name: Install Rust nightly
         uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy
 
       - name: Setup Cargo dependency cache
         uses: Swatinem/rust-cache@v2
