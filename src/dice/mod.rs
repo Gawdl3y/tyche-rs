@@ -430,14 +430,14 @@ impl Modifier {
 	///
 	/// # Errors
 	/// If applying the modifier would result in infinite additional die rolls, an error variant is returned.
-	pub fn apply(&self, rolled: &mut Rolled, rng: &mut impl Roller) -> Result<(), Error> {
+	pub fn apply(self, rolled: &mut Rolled, rng: &mut impl Roller) -> Result<(), Error> {
 		match self {
-			Self::Reroll { cond, recurse } => self.apply_reroll(rolled, rng, *cond, *recurse)?,
-			Self::Explode { cond, recurse } => self.apply_explode(rolled, rng, *cond, *recurse)?,
-			Self::KeepHigh(count) => self.apply_keep_high(rolled, *count),
-			Self::KeepLow(count) => self.apply_keep_low(rolled, *count),
-			Self::Min(min) => self.apply_min(rolled, *min),
-			Self::Max(max) => self.apply_max(rolled, *max),
+			Self::Reroll { cond, recurse } => self.apply_reroll(rolled, rng, cond, recurse)?,
+			Self::Explode { cond, recurse } => self.apply_explode(rolled, rng, cond, recurse)?,
+			Self::KeepHigh(count) => self.apply_keep_high(rolled, count),
+			Self::KeepLow(count) => self.apply_keep_low(rolled, count),
+			Self::Min(min) => self.apply_min(rolled, min),
+			Self::Max(max) => self.apply_max(rolled, max),
 		};
 
 		Ok(())
