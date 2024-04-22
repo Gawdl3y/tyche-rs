@@ -1,5 +1,3 @@
-#![cfg(feature = "parse")]
-
 //! Parser generator functions and implementations of [`str::FromStr`] for all dice and expression data structures.
 //! Requires the `parse` feature (enabled by default).
 //!
