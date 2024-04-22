@@ -152,6 +152,19 @@ impl Roller for Max {
 }
 
 /// Generates rolls from an iterator of values. Mainly useful for testing purposes.
+///
+/// # Examples
+/// ```
+/// use dicey::dice::{roller::{Iter as IterRoller, Roller}, Dice, DieRoll};
+///
+/// let mut roller = IterRoller::new(vec![1, 2, 3, 4, 10]);
+/// let dice = Dice::new(5, 6);
+/// assert_eq!(
+/// 	roller.roll(&dice, true)?.rolls,
+/// 	vec![DieRoll::new(1), DieRoll::new(2), DieRoll::new(3), DieRoll::new(4), DieRoll::new(10)]
+/// );
+/// # Ok::<(), dicey::dice::Error>(())
+/// ```
 #[derive(Debug, Clone)]
 pub struct Iter<I: Iterator<Item = u8>>(Peekable<I>);
 
