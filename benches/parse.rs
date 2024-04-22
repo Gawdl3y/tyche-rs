@@ -28,7 +28,7 @@ fn parse_absurd(b: &mut Bencher) {
 
 #[bench]
 fn parser_creation(b: &mut Bencher) {
-	b.iter(|| dicey::parser());
+	b.iter(dicey::parser);
 }
 
 #[bench]

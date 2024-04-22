@@ -73,3 +73,6 @@ pub use expr::Expr;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(feature = "build-binary")]
+use ariadne as _;

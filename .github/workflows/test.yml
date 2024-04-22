@@ -21,7 +21,7 @@ jobs:
           shared-key: shared
 
       - name: Run Clippy
-        run: cargo clippy
+        run: cargo clippy --all-targets --all-features
         env:
           RUSTFLAGS: -Dwarnings
 
@@ -41,7 +41,10 @@ jobs:
           shared-key: shared
 
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --all-targets --all-features --verbose
+
+      - name: Run doc tests
+        run: cargo test --doc --all-features
 
   build:
     name: Build

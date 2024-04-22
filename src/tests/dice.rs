@@ -46,7 +46,7 @@ fn exploding_max_d4s() {
 	let explosions = rolled
 		.rolls
 		.into_iter()
-		.filter(|roll| roll.is_additional())
+		.filter(DieRoll::is_additional)
 		.collect::<Vec<_>>();
 	assert!(!explosions.is_empty());
 	assert!(explosions.len() < u8::MAX as usize);
@@ -223,7 +223,7 @@ fn rolls_successfully_and_in_range(dice: &Dice) -> Rolled {
 	assert!(result.is_ok());
 
 	let rolled = result.unwrap();
-	rolls_in_range(&rolled.rolls, rolled.dice.sides.into());
+	rolls_in_range(&rolled.rolls, rolled.dice.sides);
 
 	rolled
 }

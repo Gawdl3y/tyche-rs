@@ -67,16 +67,18 @@ fn basic_dice_math() {
 	let expr = Expr::Add(Box::new(Expr::Dice(dice)), Box::new(Expr::Num(8)));
 	let evaled = expr.eval(&mut FastRandRoller::default()).unwrap();
 
-	let dice_total = match evaled {
-		Evaled::Add(ref boxed, _) => match boxed.as_ref() {
-			Evaled::Dice(evaled_dice) => evaled_dice.total().unwrap() as i32,
-			_ => panic!(),
-		},
-		_ => panic!(),
+	let dice_total = if let Evaled::Add(boxed, _) = &evaled {
+		if let Evaled::Dice(evaled_dice) = boxed.as_ref() {
+			i32::from(evaled_dice.total().unwrap())
+		} else {
+			panic!()
+		}
+	} else {
+		panic!()
 	};
 
 	let total = evaled.calc().unwrap();
-	assert_eq!(total, dice_total + 8);
+	assert_eq!(total, dice_total.checked_add(8).unwrap());
 }
 
 #[test]
