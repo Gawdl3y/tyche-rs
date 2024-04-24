@@ -38,7 +38,7 @@ pub enum Modifier {
 	/// // Upon being applied, the modifier will drop the 1 roll, roll a new 1 from the predetermined RNG, drop that too,
 	/// // then roll a new 4 from the RNG.
 	/// // Final expected rolled dice set, after rr1 modifier: 4d6rr1[3, 6, 1 (d), 2, 1 (d), 4]
-	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// let mut expected = Rolled::from_dice_and_rolls(&dice, premade_rolls);
 	/// expected.rolls[2].drop(rr1_mod);
 	/// expected.rolls[4].add(rr1_mod);
 	/// expected.rolls[4].drop(rr1_mod);
@@ -71,7 +71,7 @@ pub enum Modifier {
 	///
 	/// // Upon being applied, the modifier will drop the 1 roll and roll a new 1 from the predetermined RNG.
 	/// // Final expected rolled dice set, after r1 modifier: 4d6r1[3, 6, 1 (d), 2, 1]
-	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// let mut expected = Rolled::from_dice_and_rolls(&dice, premade_rolls);
 	/// expected.rolls[2].drop(r1_mod);
 	/// expected.rolls[4].add(r1_mod);
 	/// assert_eq!(rolled, expected);
@@ -114,7 +114,7 @@ pub enum Modifier {
 	/// // Upon being applied, the modifier will see that a 6 (the max die value) was rolled, roll a new additional 6, see
 	/// // that is also the max die value, then roll a new 4 as well.
 	/// // Final expected rolled dice set, after x modifier: 4d6x[3, 6, 1, 2, 6, 4]
-	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// let mut expected = Rolled::from_dice_and_rolls(&dice, premade_rolls);
 	/// expected.rolls[4].add(x_mod);
 	/// expected.rolls[5].add(x_mod);
 	/// assert_eq!(rolled, expected);
@@ -145,7 +145,7 @@ pub enum Modifier {
 	///
 	/// // Upon being applied, the modifier will see that a 6 (the max die value) was rolled and roll a new additional 6.
 	/// // Final expected rolled dice set, after xo modifier: 4d6xo[3, 6, 1, 2, 6]
-	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// let mut expected = Rolled::from_dice_and_rolls(&dice, premade_rolls);
 	/// expected.rolls[4].add(xo_mod);
 	/// assert_eq!(rolled, expected);
 	/// # Ok::<(), dicey::dice::Error>(())
@@ -183,7 +183,7 @@ pub enum Modifier {
 	///
 	/// // Upon being applied, the modifier will drop all rolls except the highest one, so 3, 1, and 2 will be dropped.
 	/// // Final expected rolled dice set, after kh modifier: 4d6kh[3 (d), 6, 1 (d), 2 (d)]
-	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// let mut expected = Rolled::from_dice_and_rolls(&dice, premade_rolls);
 	/// expected.rolls[0].drop(kh_mod);
 	/// expected.rolls[2].drop(kh_mod);
 	/// expected.rolls[3].drop(kh_mod);
@@ -211,7 +211,7 @@ pub enum Modifier {
 	///
 	/// // Upon being applied, the modifier will drop all rolls except the two highest, so 1 and 2 will be dropped.
 	/// // Final expected rolled dice set, after kh2 modifier: 4d6kh2[3, 6, 1 (d), 2 (d)]
-	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// let mut expected = Rolled::from_dice_and_rolls(&dice, premade_rolls);
 	/// expected.rolls[2].drop(kh2_mod);
 	/// expected.rolls[3].drop(kh2_mod);
 	/// assert_eq!(rolled, expected);
@@ -243,7 +243,7 @@ pub enum Modifier {
 	///
 	/// // Upon being applied, the modifier will drop all rolls except the lowest one, so 3, 6, and 2 will be dropped.
 	/// // Final expected rolled dice set, after kl modifier: 4d6kl[3 (d), 6 (d), 1, 2 (d)]
-	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// let mut expected = Rolled::from_dice_and_rolls(&dice, premade_rolls);
 	/// expected.rolls[0].drop(kl_mod);
 	/// expected.rolls[1].drop(kl_mod);
 	/// expected.rolls[3].drop(kl_mod);
@@ -271,7 +271,7 @@ pub enum Modifier {
 	///
 	/// // Upon being applied, the modifier will drop all rolls except the two lowest, so 3 and 6 will be dropped.
 	/// // Final expected rolled dice set, after kl2 modifier: 4d6kl2[3 (d), 6 (d), 1, 2]
-	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// let mut expected = Rolled::from_dice_and_rolls(&dice, premade_rolls);
 	/// expected.rolls[0].drop(kl2_mod);
 	/// expected.rolls[1].drop(kl2_mod);
 	/// assert_eq!(rolled, expected);
@@ -302,7 +302,7 @@ pub enum Modifier {
 	/// // Upon being applied, the modifier will replace the values of all rolls less than 3 with 3, so 1 and 2 will
 	/// // both become 3.
 	/// // Final expected rolled dice set, after min3 modifier: 4d6min3[3, 6, 3 (m), 3 (m)]
-	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// let mut expected = Rolled::from_dice_and_rolls(&dice, premade_rolls);
 	/// expected.rolls[2].change(min3_mod, 3);
 	/// expected.rolls[3].change(min3_mod, 3);
 	/// assert_eq!(rolled, expected);
@@ -332,7 +332,7 @@ pub enum Modifier {
 	///
 	/// // Upon being applied, the modifier will replace the values of all rolls greater than 3 with 3, so 6 will become 3.
 	/// // Final expected rolled dice set, after max3 modifier: 4d6max3[3, 3 (m), 1, 2]
-	/// let mut expected = Rolled::from_dice_and_rolls(dice.clone(), premade_rolls);
+	/// let mut expected = Rolled::from_dice_and_rolls(&dice, premade_rolls);
 	/// expected.rolls[1].change(max3_mod, 3);
 	/// assert_eq!(rolled, expected);
 	/// # Ok::<(), dicey::dice::Error>(())

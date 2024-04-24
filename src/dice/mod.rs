@@ -286,10 +286,10 @@ impl Rolled<'_> {
 
 	/// Creates a new rolled set of dice from a given set of dice and an iterator of values.
 	#[must_use]
-	pub fn from_dice_and_rolls(dice: Dice, rolls: impl IntoIterator<Item = u8>) -> Rolled<'static> {
+	pub fn from_dice_and_rolls(dice: &Dice, rolls: impl IntoIterator<Item = u8>) -> Rolled {
 		Rolled {
 			rolls: rolls.into_iter().map(DieRoll::new).collect(),
-			dice: Cow::Owned(dice),
+			dice: Cow::Borrowed(dice),
 		}
 	}
 }
