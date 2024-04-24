@@ -20,7 +20,7 @@ edition = "2021"
 default = ["parse", "fastrand"]
 parse = ["dep:chumsky"]
 fastrand = ["dep:fastrand"]
-build-binary = ["parse", "dep:ariadne"]
+build-binary = ["parse", "fastrand", "dep:ariadne"]
 
 [dependencies]
 thiserror = "1.0.57"
