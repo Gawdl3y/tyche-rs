@@ -153,7 +153,7 @@ let rolled = roller.roll(&dice, true)?;
 
 Rolling a single die results in a `DieRoll` instance, whereas rolling a set of `Dice` returns a `Rolled` instance.
 
-#### Working with Rolled dice sets
+#### Working with rolled dice sets
 
 `Rolled` is a struct that ties multiple `DieRoll`s together with the `Dice` that were rolled to generate them so it can
 accurately describe what happened during the roll and application of any modifiers that were on the dice.
@@ -189,7 +189,7 @@ let described = rolled.to_string();
 let limited = rolled.describe(Some(2));
 ```
 
-#### Working with individual DieRolls
+#### Working with individual die rolls
 
 A `DieRoll` contains the final value of the die alongside information about any changes that were made to it and the
 source of said changes.
@@ -211,8 +211,8 @@ modifiers, is not included when totaling the rolled set, and will be marked as d
 Modifiers that can result in dropped die rolls are:
 
 - Reroll
-- KeepHigh
-- KeepLow
+- Keep highest
+- Keep lowest
 
 ##### Changed rolls
 
@@ -220,8 +220,8 @@ When a modifier directly manipulates the value of a `DieRoll` in a `Rolled` set,
 `ValChange` item added to it that describes the change made and the modifier that caused it.  
 Modifiers that can result in changed die rolls are:
 
-- Min
-- Max
+- Minimum
+- Maximum
 
 ### Working with expressions
 
