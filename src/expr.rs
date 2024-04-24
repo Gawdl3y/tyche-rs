@@ -38,7 +38,7 @@ macro_rules! op_type_impl {
 	};
 }
 
-/// Individual elements of a full mathematical dice expression
+/// Tree structure of individual elements of a full mathematical dice expression
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Expr {
@@ -111,7 +111,7 @@ impl Expr {
 impl Describe for Expr {
 	/// Builds a full usable expression string from the expressions. Operations are grouped with parentheses whenever
 	/// the order of operations could be considered ambiguous, such as when mixing addition and multiplication together.
-	/// All strings output from this should result in the exact same expression layout when re-parsing them.
+	/// All strings output from this should result in the exact same expression tree when re-parsing them.
 	///
 	/// `list_limit` does not affect the output of this implementation in any way since there are no possible lists of
 	/// elements included, so it is always safe to pass `None`.
@@ -145,7 +145,7 @@ impl fmt::Display for Expr {
 	}
 }
 
-/// Individual elements of an evaluated mathematical dice expression
+/// Tree structure of individual elements of an evaluated mathematical dice expression
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Evaled<'a> {
