@@ -1,10 +1,5 @@
+#![cfg_attr(not(doctest), doc = include_str!("../README.md"))]
 #![allow(clippy::tabs_in_doc_comments)]
-
-//! A library for parsing, rolling, and explaining the results of tabletop dice. Dice modifiers use a similar syntax to
-//! [FoundryVTT's modifiers].
-//!
-//! [FoundryVTT's modifiers]: https://foundryvtt.com/article/dice-modifiers/
-
 #![deny(macro_use_extern_crate, meta_variable_misuse, unit_bindings)]
 #![warn(
 	explicit_outlives_requirements,
@@ -62,14 +57,13 @@
 
 pub mod dice;
 pub mod expr;
-
 #[cfg(feature = "parse")]
 pub mod parse;
-#[cfg(feature = "parse")]
-pub use parse::expr as parser;
 
 pub use dice::Dice;
 pub use expr::Expr;
+#[cfg(feature = "parse")]
+pub use parse::expr as parser;
 
 #[cfg(test)]
 mod tests;
