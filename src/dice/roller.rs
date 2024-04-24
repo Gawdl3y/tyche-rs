@@ -64,7 +64,7 @@ pub trait Roller {
 /// use dicey::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice};
 /// use fastrand::Rng;
 ///
-/// let mut roller = FastRandRoller::new(Rng::with_seed(0xef6f79ed30ba75a));
+/// let mut roller = FastRandRoller::new(Rng::with_seed(0x750c38d574400));
 /// let dice = Dice::new(4, 6);
 /// let _ = roller.roll(&dice, true)?;
 /// let _ = roller.roll(&dice, true)?;
