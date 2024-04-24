@@ -15,7 +15,7 @@ pub enum Modifier {
 	///
 	/// ## Reroll recursively (`rr`)
 	/// ```
-	/// use dicey::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
+	/// use tyche::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
 	///
 	/// // Build the 4d6rr1 dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).reroll(Condition::Eq(1), true).build();
@@ -44,12 +44,12 @@ pub enum Modifier {
 	/// expected.rolls[4].drop(rr1_mod);
 	/// expected.rolls[5].add(rr1_mod);
 	/// assert_eq!(rolled, expected);
-	/// # Ok::<(), dicey::dice::Error>(())
+	/// # Ok::<(), tyche::dice::Error>(())
 	/// ```
 	///
 	/// ## Reroll once (`r`)
 	/// ```
-	/// use dicey::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
+	/// use tyche::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
 	///
 	/// // Build the 4d6r1 dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).reroll(Condition::Eq(1), false).build();
@@ -75,7 +75,7 @@ pub enum Modifier {
 	/// expected.rolls[2].drop(r1_mod);
 	/// expected.rolls[4].add(r1_mod);
 	/// assert_eq!(rolled, expected);
-	/// # Ok::<(), dicey::dice::Error>(())
+	/// # Ok::<(), tyche::dice::Error>(())
 	/// ```
 	Reroll {
 		/// Condition that rolls must pass in order to be rerolled
@@ -91,7 +91,7 @@ pub enum Modifier {
 	///
 	/// ## Explode recursively (`x`)
 	/// ```
-	/// use dicey::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
+	/// use tyche::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
 	///
 	/// // Build the 4d6x dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).explode(None, true).build();
@@ -118,12 +118,12 @@ pub enum Modifier {
 	/// expected.rolls[4].add(x_mod);
 	/// expected.rolls[5].add(x_mod);
 	/// assert_eq!(rolled, expected);
-	/// # Ok::<(), dicey::dice::Error>(())
+	/// # Ok::<(), tyche::dice::Error>(())
 	/// ```
 	///
 	/// ## Explode once (`xo`)
 	/// ```
-	/// use dicey::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
+	/// use tyche::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
 	///
 	/// // Build the 4d6xo dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).explode(None, false).build();
@@ -148,7 +148,7 @@ pub enum Modifier {
 	/// let mut expected = Rolled::from_dice_and_rolls(&dice, premade_rolls);
 	/// expected.rolls[4].add(xo_mod);
 	/// assert_eq!(rolled, expected);
-	/// # Ok::<(), dicey::dice::Error>(())
+	/// # Ok::<(), tyche::dice::Error>(())
 	/// ```
 	Explode {
 		/// Condition that rolls must pass in order to explode.
@@ -165,7 +165,7 @@ pub enum Modifier {
 	///
 	/// ## Keep highest die (`kh`)
 	/// ```
-	/// use dicey::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
+	/// use tyche::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
 	///
 	/// // Build the 4d6kh dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).keep_high(1).build();
@@ -188,12 +188,12 @@ pub enum Modifier {
 	/// expected.rolls[2].drop(kh_mod);
 	/// expected.rolls[3].drop(kh_mod);
 	/// assert_eq!(rolled, expected);
-	/// # Ok::<(), dicey::dice::Error>(())
+	/// # Ok::<(), tyche::dice::Error>(())
 	/// ```
 	///
 	/// ## Keep highest 2 dice (`kh2`)
 	/// ```
-	/// use dicey::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
+	/// use tyche::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
 	///
 	/// // Build the 4d6kh2 dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).keep_high(2).build();
@@ -215,7 +215,7 @@ pub enum Modifier {
 	/// expected.rolls[2].drop(kh2_mod);
 	/// expected.rolls[3].drop(kh2_mod);
 	/// assert_eq!(rolled, expected);
-	/// # Ok::<(), dicey::dice::Error>(())
+	/// # Ok::<(), tyche::dice::Error>(())
 	/// ```
 	KeepHigh(u8),
 
@@ -225,7 +225,7 @@ pub enum Modifier {
 	///
 	/// ## Keep lowest die (`kl`)
 	/// ```
-	/// use dicey::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
+	/// use tyche::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
 	///
 	/// // Build the 4d6kl dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).keep_low(1).build();
@@ -248,12 +248,12 @@ pub enum Modifier {
 	/// expected.rolls[1].drop(kl_mod);
 	/// expected.rolls[3].drop(kl_mod);
 	/// assert_eq!(rolled, expected);
-	/// # Ok::<(), dicey::dice::Error>(())
+	/// # Ok::<(), tyche::dice::Error>(())
 	/// ```
 	///
 	/// ## Keep lowest 2 dice (`kl2`)
 	/// ```
-	/// use dicey::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
+	/// use tyche::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
 	///
 	/// // Build the 4d6kl2 dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).keep_low(2).build();
@@ -275,7 +275,7 @@ pub enum Modifier {
 	/// expected.rolls[0].drop(kl2_mod);
 	/// expected.rolls[1].drop(kl2_mod);
 	/// assert_eq!(rolled, expected);
-	/// # Ok::<(), dicey::dice::Error>(())
+	/// # Ok::<(), tyche::dice::Error>(())
 	/// ```
 	KeepLow(u8),
 
@@ -283,7 +283,7 @@ pub enum Modifier {
 	///
 	/// # Examples
 	/// ```
-	/// use dicey::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
+	/// use tyche::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
 	///
 	/// // Build the 4d6min3 dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).min(3).build();
@@ -306,7 +306,7 @@ pub enum Modifier {
 	/// expected.rolls[2].change(min3_mod, 3);
 	/// expected.rolls[3].change(min3_mod, 3);
 	/// assert_eq!(rolled, expected);
-	/// # Ok::<(), dicey::dice::Error>(())
+	/// # Ok::<(), tyche::dice::Error>(())
 	/// ```
 	Min(u8),
 
@@ -314,7 +314,7 @@ pub enum Modifier {
 	///
 	/// # Examples
 	/// ```
-	/// use dicey::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
+	/// use tyche::dice::{modifier::{Condition, Modifier}, roller::{Iter as IterRoller, Roller}, Dice, Rolled};
 	///
 	/// // Build the 4d6max3 dice set and create a roller that has predetermined values for the dice rolls
 	/// let dice = Dice::builder().count(4).sides(6).max(3).build();
@@ -335,7 +335,7 @@ pub enum Modifier {
 	/// let mut expected = Rolled::from_dice_and_rolls(&dice, premade_rolls);
 	/// expected.rolls[1].change(max3_mod, 3);
 	/// assert_eq!(rolled, expected);
-	/// # Ok::<(), dicey::dice::Error>(())
+	/// # Ok::<(), tyche::dice::Error>(())
 	/// ```
 	Max(u8),
 	//

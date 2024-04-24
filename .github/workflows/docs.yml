@@ -37,7 +37,7 @@ jobs:
         run: cargo doc --no-deps
 
       - name: Add redirect
-        run: echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=dicey/index.html"></head><body><p>Redirecting to <a href="./dicey/index.html">./dicey/index.html</a>...</p></body></html>' > target/doc/index.html
+        run: echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=tyche/index.html"></head><body><p>Redirecting to <a href="./tyche/index.html">./tyche/index.html</a>...</p></body></html>' > target/doc/index.html
 
       - name: Remove lock file
         run: rm target/doc/.lock

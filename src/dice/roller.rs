@@ -50,25 +50,25 @@ pub trait Roller {
 ///
 /// ## Default fastrand roller
 /// ```
-/// use dicey::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice};
+/// use tyche::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice};
 ///
 /// let mut roller = FastRandRoller::default();
 /// let dice = Dice::new(4, 6);
 /// let _ = roller.roll(&dice, true)?;
 /// let _ = roller.roll(&dice, true)?;
-/// # Ok::<(), dicey::dice::Error>(())
+/// # Ok::<(), tyche::dice::Error>(())
 /// ```
 ///
 /// ## Custom fastrand roller (seeded)
 /// ```
-/// use dicey::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice};
+/// use tyche::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice};
 /// use fastrand::Rng;
 ///
 /// let mut roller = FastRandRoller::new(Rng::with_seed(0x750c38d574400));
 /// let dice = Dice::new(4, 6);
 /// let _ = roller.roll(&dice, true)?;
 /// let _ = roller.roll(&dice, true)?;
-/// # Ok::<(), dicey::dice::Error>(())
+/// # Ok::<(), tyche::dice::Error>(())
 /// ```
 #[cfg(feature = "fastrand")]
 #[derive(Debug, Default, Clone)]
@@ -97,7 +97,7 @@ impl Roller for FastRand {
 ///
 /// # Examples
 /// ```
-/// use dicey::dice::{roller::{Roller, Val as ValRoller}, Dice};
+/// use tyche::dice::{roller::{Roller, Val as ValRoller}, Dice};
 ///
 /// let mut roller = ValRoller(42);
 ///
@@ -108,7 +108,7 @@ impl Roller for FastRand {
 /// let dice = Dice::new(2, 20);
 /// let rolled = roller.roll(&dice, true)?;
 /// assert!(rolled.rolls.iter().all(|roll| roll.val == 42));
-/// # Ok::<(), dicey::dice::Error>(())
+/// # Ok::<(), tyche::dice::Error>(())
 /// ```
 #[derive(Debug, Default, Clone)]
 #[allow(clippy::exhaustive_structs)]
@@ -126,7 +126,7 @@ impl Roller for Val {
 ///
 /// # Examples
 /// ```
-/// use dicey::dice::{roller::{Max as MaxRoller, Roller}, Dice};
+/// use tyche::dice::{roller::{Max as MaxRoller, Roller}, Dice};
 ///
 /// let mut roller = MaxRoller;
 ///
@@ -137,7 +137,7 @@ impl Roller for Val {
 /// let dice = Dice::new(2, 20);
 /// let rolled = roller.roll(&dice, true)?;
 /// assert!(rolled.rolls.iter().all(|roll| roll.val == 20));
-/// # Ok::<(), dicey::dice::Error>(())
+/// # Ok::<(), tyche::dice::Error>(())
 /// ```
 #[derive(Debug, Default, Clone)]
 #[allow(clippy::exhaustive_structs)]
@@ -155,7 +155,7 @@ impl Roller for Max {
 ///
 /// # Examples
 /// ```
-/// use dicey::dice::{roller::{Iter as IterRoller, Roller}, Dice, DieRoll};
+/// use tyche::dice::{roller::{Iter as IterRoller, Roller}, Dice, DieRoll};
 ///
 /// let mut roller = IterRoller::new(vec![1, 2, 3, 4, 10]);
 /// let dice = Dice::new(5, 6);
@@ -163,7 +163,7 @@ impl Roller for Max {
 /// 	roller.roll(&dice, true)?.rolls,
 /// 	vec![DieRoll::new(1), DieRoll::new(2), DieRoll::new(3), DieRoll::new(4), DieRoll::new(10)]
 /// );
-/// # Ok::<(), dicey::dice::Error>(())
+/// # Ok::<(), tyche::dice::Error>(())
 /// ```
 #[derive(Debug, Clone)]
 pub struct Iter<I: Iterator<Item = u8>>(Peekable<I>);

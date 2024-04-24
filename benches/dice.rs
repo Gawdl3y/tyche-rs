@@ -6,7 +6,7 @@ use std::borrow::Cow;
 
 use test::Bencher;
 
-use dicey::{
+use tyche::{
 	dice::{
 		roller::{FastRand as FastRandRoller, Roller},
 		Dice, DieRoll, Rolled,

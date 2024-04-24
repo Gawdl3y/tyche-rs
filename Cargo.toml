@@ -1,5 +1,5 @@
 [package]
-name = "dicey"
+name = "tyche"
 version = "0.1.0"
 description = "Dice rolling and dice expression (with a syntax similar to FoundryVTT) parsing library"
 authors = ["Schuyler Cebulskie <me@gawdl3y.dev>"]
@@ -11,7 +11,7 @@ categories = [
 	"parser-implementations",
 ]
 license = "LGPL-3.0-or-later"
-repository = "https://github.com/Gawdl3y/dicey-rs"
+repository = "https://github.com/Gawdl3y/tyche-rs"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -29,5 +29,5 @@ chumsky = { version = "1.0.0-alpha.7", optional = true, features = ["label"] }
 ariadne = { version = "0.4", optional = true }
 
 [[bin]]
-name = "dicey"
+name = "tyche"
 required-features = ["build-binary"]

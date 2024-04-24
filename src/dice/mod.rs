@@ -195,14 +195,14 @@ impl fmt::Display for DieRoll {
 	///
 	/// # Examples
 	/// ```
-	/// use dicey::dice::DieRoll;
+	/// use tyche::dice::DieRoll;
 	///
 	/// let roll = DieRoll::new(4);
 	/// assert_eq!(roll.to_string(), "4");
 	/// ```
 	///
 	/// ```
-	/// use dicey::dice::{DieRoll, Modifier};
+	/// use tyche::dice::{DieRoll, Modifier};
 	///
 	/// let mut roll = DieRoll::new(16);
 	/// let kh_mod = Modifier::KeepHigh(1);
@@ -253,13 +253,13 @@ impl Rolled<'_> {
 	///
 	/// # Examples
 	/// ```
-	/// use dicey::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice};
+	/// use tyche::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice};
 	///
 	/// let dice = Dice::new(4, 8);
 	/// let rolled = FastRandRoller::default().roll(&dice, true)?;
 	/// let total = rolled.total()?;
 	/// assert_eq!(total, rolled.rolls.iter().map(|roll| roll.val as u16).sum());
-	/// # Ok::<(), dicey::dice::Error>(())
+	/// # Ok::<(), tyche::dice::Error>(())
 	/// ```
 	pub fn total(&self) -> Result<u16, Error> {
 		let mut sum: u16 = 0;
@@ -304,7 +304,7 @@ impl Describe for Rolled<'_> {
 	/// # Examples
 	/// ```
 	/// use std::borrow::Cow;
-	/// use dicey::{dice::{Dice, DieRoll, Rolled}, expr::Describe};
+	/// use tyche::{dice::{Dice, DieRoll, Rolled}, expr::Describe};
 	///
 	/// let dice = Dice::builder().count(4).sides(6).keep_high(2).build();
 	/// let kh_mod = dice.modifiers[0];
@@ -378,7 +378,7 @@ pub enum Error {
 	///
 	/// # Examples
 	/// ```
-	/// use dicey::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice, Error};
+	/// use tyche::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice, Error};
 	///
 	/// let dice = Dice::builder().count(4).sides(1).explode(None, true).build();
 	/// assert!(matches!(FastRandRoller::default().roll(&dice, true), Err(Error::InfiniteRolls(..))));
@@ -390,7 +390,7 @@ pub enum Error {
 	///
 	/// # Examples
 	/// ```
-	/// use dicey::dice::{modifier::Condition, Error};
+	/// use tyche::dice::{modifier::Condition, Error};
 	///
 	/// let cond = Condition::from_symbol_and_val("!", 4);
 	/// assert!(matches!(cond, Err(Error::UnknownCondition(..))));
@@ -405,7 +405,7 @@ pub enum Error {
 ///
 /// ## Basic dice
 /// ```
-/// use dicey::Dice;
+/// use tyche::Dice;
 ///
 /// let dice = Dice::builder().count(2).sides(6).build();
 /// assert_eq!(dice, Dice::new(2, 6));
@@ -413,7 +413,7 @@ pub enum Error {
 ///
 /// ## Single modifier
 /// ```
-/// use dicey::dice::{Dice, Modifier};
+/// use tyche::dice::{Dice, Modifier};
 ///
 /// let dice = Dice::builder().count(6).sides(8).explode(None, true).build();
 /// assert_eq!(
@@ -431,7 +431,7 @@ pub enum Error {
 ///
 /// ## Multiple modifiers
 /// ```
-/// use dicey::dice::{modifier::{Condition, Modifier}, Dice};
+/// use tyche::dice::{modifier::{Condition, Modifier}, Dice};
 ///
 /// let dice = Dice::builder()
 /// 	.count(6)

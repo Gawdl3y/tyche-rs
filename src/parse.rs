@@ -9,16 +9,16 @@
 //!
 //! ## Parsing Dice
 //! ```
-//! use dicey::Dice;
+//! use tyche::Dice;
 //!
 //! let dice: Dice = "6d8x".parse()?;
 //! assert_eq!(dice, Dice::builder().count(6).sides(8).explode(None, true).build());
-//! # Ok::<(), dicey::parse::Error>(())
+//! # Ok::<(), tyche::parse::Error>(())
 //! ```
 //!
 //! ## Parsing expressions
 //! ```
-//! use dicey::{Dice, Expr};
+//! use tyche::{Dice, Expr};
 //!
 //! let expr: Expr = "6d8x + 4d6 - 3".parse()?;
 //! assert_eq!(
@@ -33,7 +33,7 @@
 //! 		Box::new(Expr::Num(3)),
 //! 	)
 //! );
-//! # Ok::<(), dicey::parse::Error>(())
+//! # Ok::<(), tyche::parse::Error>(())
 //! ```
 
 use std::{fmt, str};

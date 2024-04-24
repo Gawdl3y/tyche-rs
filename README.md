@@ -1,6 +1,6 @@
-# Dicey
+# Tyche
 
-Dicey is a library for parsing, rolling, and explaining the results of tabletop dice.  
+Tyche is a library for parsing, rolling, and explaining the results of tabletop dice.  
 It also has a simple CLI app binary that evaluates a given expression.
 
 The eventual goal is full compatibility with [FoundryVTT's dice syntax](https://foundryvtt.com/article/dice/) with some
@@ -39,21 +39,21 @@ convenient extensions.
 
 ### Library
 
-Run `cargo add dicey` or add the following to your project's Cargo.toml file:
+Run `cargo add tyche` or add the following to your project's Cargo.toml file:
 
 ```toml
 [dependencies]
-dicey = "0.1.0"
+tyche = "0.1.0"
 ```
 
 ### Binary (CLI app)
 
-Run `cargo install dicey --features build-binary`.  
-Assuming Cargo's bin directory is in your `$PATH`, use the app with `dicey` or `dicey <dice expression>`.
+Run `cargo install tyche --features build-binary`.  
+Assuming Cargo's bin directory is in your `$PATH`, use the app with `tyche` or `tyche <dice expression>`.
 
 ## Library usage
 
-There are three main types that you'll start with while using Dicey:
+There are three main types that you'll start with while using Tyche:
 
 - `Dice`: a struct containing a dice count, number of sides for each die, and modifiers that should be applied to any
   resulting rolls, representing a set of dice, e.g. `4d8x`.
@@ -70,7 +70,7 @@ There are three main types that you'll start with while using Dicey:
 
 All parsing requires the `parse` feature of the crate to be enabled (which it is by default).
 
-Dicey uses the [chumsky](https://github.com/zesterer/chumsky) parser generator to parse all strings in a
+Tyche uses the [chumsky](https://github.com/zesterer/chumsky) parser generator to parse all strings in a
 _nearly_ zero-copy and wicked fast fashion.
 
 Most conveniently, parsing can be done by utilizing the standard
@@ -78,7 +78,7 @@ Most conveniently, parsing can be done by utilizing the standard
 (`Dice`, `Expr`, `Modifier`, and `Condition`):
 
 ```rust
-use dicey::{
+use tyche::{
 	dice::modifier::{Condition, Modifier},
 	Dice, Expr,
 };
@@ -90,7 +90,7 @@ let cond: Condition = "<3".parse()?;
 ```
 
 Alternatively, you can directly use the parsers for each type via its associated `GenParser::parser()` implementation
-or the functions in the `dicey::parse` module.
+or the functions in the `tyche::parse` module.
 
 ### Manually creating Dice
 
@@ -98,7 +98,7 @@ Programmatically constructing `Dice` to roll is painless, even with lots of chai
 thanks to its use of the builder pattern.
 
 ```rust
-use dicey::{dice::modifier::Condition, Dice};
+use tyche::{dice::modifier::Condition, Dice};
 
 // Simple set of dice, no modifiers: 2d20
 let d2d20 = Dice::new(2, 20);
@@ -126,7 +126,7 @@ The most suitable "default" roller implementation is `FastRand`, which generates
 [`fastrand::Rng`](https://docs.rs/fastrand/latest/fastrand/struct.Rng.html) instance.
 
 ```rust
-use dicey::dice::roller::FastRand as FastRandRoller;
+use tyche::dice::roller::FastRand as FastRandRoller;
 
 // Create a FastRand roller with the default thread-local fastrand::Rng
 let mut roller = FastRandRoller::default();
@@ -139,7 +139,7 @@ let mut roller = FastRandRoller::new(rng);
 Once you have a roller, you can roll a single die at a time or a whole set of `Dice` with it:
 
 ```rust
-use dicey::dice::{roller::FastRand as FastRandRoller, Dice, Roller};
+use tyche::dice::{roller::FastRand as FastRandRoller, Dice, Roller};
 
 let mut roller = FastRandRoller::default();
 
@@ -162,7 +162,7 @@ Using a `Rolled` result, you can easily total the results of all rolled dice and
 original dice set along with a list of each individual die roll.
 
 ```rust
-use dicey::{
+use tyche::{
 	dice::{roller::FastRand as FastRandRoller, Dice, Roller},
 	expr::Describe,
 };
@@ -234,7 +234,7 @@ dice rolled. This separation allows for describing an expression in a detailed w
 contains, in addition to a few other utilities.
 
 ```rust
-use dicey::{
+use tyche::{
 	dice::roller::FastRand as FastRandRoller,
 	expr::{Describe, Expr},
 };
@@ -272,4 +272,4 @@ and word your commits descriptively.
 
 ## License
 
-Dicey is licensed under the [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0) license.
+Tyche is licensed under the [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0) license.

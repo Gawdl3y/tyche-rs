@@ -68,16 +68,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dicey"
-version = "0.1.0"
-dependencies = [
- "ariadne",
- "chumsky",
- "fastrand",
- "thiserror",
-]
-
-[[package]]
 name = "fastrand"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -217,6 +207,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "tyche"
+version = "0.1.0"
+dependencies = [
+ "ariadne",
+ "chumsky",
+ "fastrand",
+ "thiserror",
 ]
 
 [[package]]

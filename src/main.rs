@@ -8,7 +8,7 @@ fn main() {
 
 	use ariadne::{ColorGenerator, Label, Report, ReportKind, Source};
 	use chumsky::Parser;
-	use dicey::{dice::roller::FastRand as FastRandRoller, parser};
+	use tyche::{dice::roller::FastRand as FastRandRoller, parser};
 
 	let args = env::args();
 	let input = if args.len() > 1 {
