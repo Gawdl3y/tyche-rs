@@ -4,8 +4,8 @@ use std::fmt;
 
 use super::{roller::Roller, Error, Rolled};
 
-/// Routines that can be applied to [`Dice`] to automatically manipulate resulting [`Rolled`] dice sets from them
-/// as part of their rolling process.
+/// Routines that can be applied to [`Dice`](super::Dice) to automatically manipulate resulting [`Rolled`] dice sets
+/// from them as part of their rolling process.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Modifier {
