@@ -1,5 +1,8 @@
 # Tyche
 
+[![Crates.io Version](https://img.shields.io/crates/v/tyche)](https://crates.io/crates/tyche)
+[![docs.rs](https://img.shields.io/docsrs/tyche)](https://docs.rs/tyche)
+
 Tyche is a library for parsing, rolling, and explaining the results of tabletop dice.  
 It also has a simple CLI app binary that evaluates a given expression.
 
@@ -55,27 +58,26 @@ Assuming Cargo's bin directory is in your `$PATH`, use the app with `tyche` or `
 
 There are three main types that you'll start with while using Tyche:
 
-- `Dice`: a struct containing a dice count, number of sides for each die, and modifiers that should be applied to any
+- [`Dice`]: a struct containing a dice count, number of sides for each die, and modifiers that should be applied to any
   resulting rolls, representing a set of dice, e.g. `4d8x`.
-- `Expr`: an AST-like tree structure enum of individual components of a dice expression, capable of representing complex
-  sets of mathematical operations including dice, e.g. `(2d6 + 2) * 2`.
-- `Roller`: a trait for rolling individual die values and entire sets of `Dice`. Sometimes referred to as simply "RNG"
+- [`Expr`]: an AST-like tree structure enum of individual components of a dice expression, capable of representing
+  complex sets of mathematical operations including dice, e.g. `(2d6 + 2) * 2`.
+- [`Roller`]: a trait for rolling individual die values and entire sets of `Dice`. Sometimes referred to as simply "RNG"
   for the sake of brevity. There are a few `Roller` implementations available out of the box:
-  - `FastRand`: uses the [fastrand](https://github.com/smol-rs/fastrand) crate for random number generation
-  - `Max`: always rolls the max possible value for each die
-  - `Val`: always rolls one specific value, ignoring dice sides (useful for testing purposes)
-  - `Iter`: rolls a specific sequence of die values from an iterator, ignoring dice sides (useful for testing purposes)
+  - [`FastRand`]: uses the [fastrand] crate for random number generation
+  - [`Max`]: always rolls the max possible value for each die
+  - [`Val`]: always rolls one specific value, ignoring dice sides
+  - [`Iter`]: rolls a specific sequence of die values from an iterator, ignoring dice sides
+    (useful for testing purposes)
 
 ### Parsing
 
 All parsing requires the `parse` feature of the crate to be enabled (which it is by default).
 
-Tyche uses the [chumsky](https://github.com/zesterer/chumsky) parser generator to parse all strings in a
-_nearly_ zero-copy and wicked fast fashion.
+Tyche uses the [chumsky] parser generator to parse all strings in a _nearly_ zero-copy and wicked-fast fashion.
 
-Most conveniently, parsing can be done by utilizing the standard
-[`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) implementations for the relevant types
-(`Dice`, `Expr`, `Modifier`, and `Condition`):
+Most conveniently, parsing can be done by utilizing the standard [`FromStr`] implementations for the relevant types
+([`Dice`], [`Expr`], [`Modifier`], and [`Condition`]):
 
 ```rust
 use tyche::{
@@ -89,12 +91,12 @@ let modifier: Modifier = "rr<3".parse()?;
 let cond: Condition = "<3".parse()?;
 ```
 
-Alternatively, you can directly use the parsers for each type via its associated `GenParser::parser()` implementation
-or the functions in the `tyche::parse` module.
+Alternatively, you can directly use the parsers for each type via its associated [`GenParser`] implementation
+or the functions in the [`tyche::parse`] module.
 
 ### Manually creating Dice
 
-Programmatically constructing `Dice` to roll is painless, even with lots of chained modifiers,
+Programmatically constructing [`Dice`] to roll is painless, even with lots of chained modifiers,
 thanks to its use of the builder pattern.
 
 ```rust
@@ -121,9 +123,9 @@ let d6d6rr1x = Dice::builder()
 
 ### Rolling Dice
 
-All rolling of dice is performed by a `Roller` implementation.  
-The most suitable "default" roller implementation is `FastRand`, which generates random numbers for die values using a
-[`fastrand::Rng`](https://docs.rs/fastrand/latest/fastrand/struct.Rng.html) instance.
+All rolling of dice is performed by a [`Roller`] implementation.  
+The most suitable "default" roller implementation is [`FastRand`], which generates random numbers for die values using a
+[`fastrand::Rng`] instance.
 
 ```rust
 use tyche::dice::roller::FastRand as FastRandRoller;
@@ -136,7 +138,7 @@ let rng = fastrand::Rng::with_seed(0x750c38d574400);
 let mut roller = FastRandRoller::new(rng);
 ```
 
-Once you have a roller, you can roll a single die at a time or a whole set of `Dice` with it:
+Once you have a roller, you can roll a single die at a time or a whole set of [`Dice`] with it:
 
 ```rust
 use tyche::dice::{roller::FastRand as FastRandRoller, Dice, Roller};
@@ -151,12 +153,12 @@ let dice = Dice::new(2, 6);
 let rolled = roller.roll(&dice, true)?;
 ```
 
-Rolling a single die results in a `DieRoll` instance, whereas rolling a set of `Dice` returns a `Rolled` instance.
+Rolling a single die results in a [`DieRoll`] instance, whereas rolling a set of `Dice` returns a [`Rolled`] instance.
 
 #### Working with rolled dice sets
 
-`Rolled` is a struct that ties multiple `DieRoll`s together with the `Dice` that were rolled to generate them so it can
-accurately describe what happened during the roll and application of any modifiers that were on the dice.
+[`Rolled`] is a struct that ties multiple [`DieRoll`]s together with the [`Dice`] that were rolled to generate them so
+it can accurately describe what happened during the roll and application of any modifiers that were on the dice.
 
 Using a `Rolled` result, you can easily total the results of all rolled dice and/or build a string that contains the
 original dice set along with a list of each individual die roll.
@@ -191,12 +193,12 @@ let limited = rolled.describe(Some(2));
 
 #### Working with individual die rolls
 
-A `DieRoll` contains the final value of the die alongside information about any changes that were made to it and the
+A [`DieRoll`] contains the final value of the die alongside information about any changes that were made to it and the
 source of said changes.
 
 ##### Added rolls
 
-When a modifier (rather than the original dice set) causes the addition of a new `DieRoll` to a `Rolled` set,
+When a modifier (rather than the original dice set) causes the addition of a new [`DieRoll`] to a [`Rolled`] set,
 the roll's `added_by` field is set to `Some(source_modifier)`. An added roll will be marked as such in strings.  
 Modifiers that can result in additional die rolls are:
 
@@ -205,7 +207,7 @@ Modifiers that can result in additional die rolls are:
 
 ##### Dropped rolls
 
-When a modifier causes the removal of a `DieRoll` from a `Rolled` set,
+When a modifier causes the removal of a [`DieRoll`] from a [`Rolled`] set,
 the roll's `dropped_by` field is set to `Some(source_modifier)`. A dropped roll will not be affected by any further
 modifiers, is not included when totaling the rolled set, and will be marked as dropped in strings.  
 Modifiers that can result in dropped die rolls are:
@@ -216,8 +218,8 @@ Modifiers that can result in dropped die rolls are:
 
 ##### Changed rolls
 
-When a modifier directly manipulates the value of a `DieRoll` in a `Rolled` set, the roll's `changes` field has a
-`ValChange` item added to it that describes the change made and the modifier that caused it.  
+When a modifier directly manipulates the value of a [`DieRoll`] in a [`Rolled`] set, the roll's `changes` field has a
+[`ValChange`] item added to it that describes the change made and the modifier that caused it.  
 Modifiers that can result in changed die rolls are:
 
 - Minimum
@@ -225,10 +227,10 @@ Modifiers that can result in changed die rolls are:
 
 ### Working with expressions
 
-`Expr` trees are essentially always obtained from parsing an expression string, as manually creating them would be quite
-cumbersome.
+[`Expr`] trees are essentially always obtained from parsing an expression string, as manually creating them would be
+quite cumbersome.
 
-Once you have an `Expr` variant, it can be evaluated to produce an `Evaled` expression tree.
+Once you have an `Expr` variant, it can be evaluated to produce an [`Evaled`] expression tree.
 `Evaled` expression trees are nearly identical to their originating `Expr` tree, except any Dice variants have their
 dice rolled. This separation allows for describing an expression in a detailed way both before and after rolling dice it
 contains, in addition to a few other utilities.
@@ -273,3 +275,23 @@ and word your commits descriptively.
 ## License
 
 Tyche is licensed under the [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0) license.
+
+[`Dice`]: https://docs.rs/tyche/latest/tyche/dice/struct.Dice.html
+[`Expr`]: https://docs.rs/tyche/latest/tyche/expr/enum.Expr.html
+[`Evaled`]: https://docs.rs/tyche/latest/tyche/expr/enum.Evaled.html
+[`Roller`]: https://docs.rs/tyche/latest/tyche/dice/roller/trait.Roller.html
+[`FastRand`]: https://docs.rs/tyche/latest/tyche/dice/roller/struct.FastRand.html
+[`Max`]: https://docs.rs/tyche/latest/tyche/dice/roller/struct.Max.html
+[`Val`]: https://docs.rs/tyche/latest/tyche/dice/roller/struct.Val.html
+[`Iter`]: https://docs.rs/tyche/latest/tyche/dice/roller/struct.Iter.html
+[`Modifier`]: https://docs.rs/tyche/latest/tyche/dice/modifier/enum.Modifier.html
+[`Condition`]: https://docs.rs/tyche/latest/tyche/dice/modifier/enum.Condition.html
+[`DieRoll`]: https://docs.rs/tyche/latest/tyche/dice/struct.DieRoll.html
+[`Rolled`]: https://docs.rs/tyche/latest/tyche/dice/struct.Rolled.html
+[`ValChange`]: https://docs.rs/tyche/latest/tyche/dice/struct.ValChange.html
+[`GenParser`]: https://docs.rs/tyche/latest/tyche/parse/trait.GenParser.html
+[`tyche::parse`]: https://docs.rs/tyche/latest/tyche/parse/index.html
+[`FromStr`]: https://doc.rust-lang.org/std/str/trait.FromStr.html
+[fastrand]: https://github.com/smol-rs/fastrand
+[`fastrand::Rng`]: https://docs.rs/fastrand/latest/fastrand/struct.Rng.html
+[chumsky]: https://github.com/zesterer/chumsky

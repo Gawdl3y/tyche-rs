@@ -1,4 +1,4 @@
-#![cfg_attr(not(doctest), doc = include_str!("../README.md"))]
+#![doc = pretty_readme::docify!("README.md", "https://docs.rs/tyche/latest/tyche/", "./")]
 #![allow(clippy::tabs_in_doc_comments)]
 #![deny(macro_use_extern_crate, meta_variable_misuse, unit_bindings)]
 #![warn(
