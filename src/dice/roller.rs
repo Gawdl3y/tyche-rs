@@ -82,6 +82,13 @@ impl FastRand {
 	pub const fn new(rng: Rng) -> Self {
 		Self(rng)
 	}
+
+	/// Creates a new fastrand roller that uses a pre-seeded RNG instance to generate rolls.
+	#[must_use]
+	#[inline]
+	pub fn with_seed(seed: u64) -> Self {
+		Self(Rng::with_seed(seed))
+	}
 }
 
 #[cfg(feature = "fastrand")]
