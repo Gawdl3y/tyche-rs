@@ -1,6 +1,6 @@
 # Tyche Changelog
 
-## WIP
+## 0.2.0
 
 - Added `FastRand::with_seed()` for more convenient setup of a seeded roller
 - Documentation improvements

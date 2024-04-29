@@ -46,7 +46,7 @@ Run `cargo add tyche` or add the following to your project's Cargo.toml file:
 
 ```toml
 [dependencies]
-tyche = "0.1.0"
+tyche = "0.2.0"
 ```
 
 ### Binary (CLI app)
