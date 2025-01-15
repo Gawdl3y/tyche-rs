@@ -26,12 +26,12 @@ build-binary = ["std", "parse", "fastrand", "dep:ariadne"]
 
 [dependencies]
 thiserror = { version = "2.0.11", default-features = false }
-fastrand = { version = "2.0.1", optional = true, default-features = false }
+fastrand = { version = "2.3.0", optional = true, default-features = false }
 chumsky = { version = "1.0.0-alpha.7", optional = true, default-features = false, features = [
 	"label",
 	"spill-stack",
 ] }
-ariadne = { version = "0.4", optional = true }
+ariadne = { version = "0.5", optional = true }
 pretty-readme = "0.1.0"
 
 [[bin]]
