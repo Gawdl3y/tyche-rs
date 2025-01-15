@@ -1,5 +1,11 @@
 # Tyche Changelog
 
+## 0.3.0
+
+- Added support for `no_std`
+- Updated to thiserror 2.0
+- Updated to ariadne 0.5
+
 ## 0.2.0
 
 - Added `FastRand::with_seed()` for more convenient setup of a seeded roller
