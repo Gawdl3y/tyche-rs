@@ -54,18 +54,33 @@ pub trait Roller {
 /// use tyche::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice};
 ///
 /// let mut roller = FastRandRoller::default();
+///
 /// let dice = Dice::new(4, 6);
 /// let _ = roller.roll(&dice, true)?;
 /// let _ = roller.roll(&dice, true)?;
 /// # Ok::<(), tyche::dice::Error>(())
 /// ```
 ///
-/// ## Custom fastrand roller (seeded)
+/// ## Manually seeded fastrand roller
+/// ```
+/// use tyche::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice};
+///
+/// let mut roller = FastRandRoller::with_seed(0x750c38d574400);
+///
+/// let dice = Dice::new(4, 6);
+/// let _ = roller.roll(&dice, true)?;
+/// let _ = roller.roll(&dice, true)?;
+/// # Ok::<(), tyche::dice::Error>(())
+/// ```
+///
+/// ## Custom fastrand roller
 /// ```
 /// use tyche::dice::{roller::{FastRand as FastRandRoller, Roller}, Dice};
 /// use fastrand::Rng;
 ///
-/// let mut roller = FastRandRoller::new(Rng::with_seed(0x750c38d574400));
+/// let rng = Rng::with_seed(0x750c38d574400);
+/// let mut roller = FastRandRoller::new(rng);
+///
 /// let dice = Dice::new(4, 6);
 /// let _ = roller.roll(&dice, true)?;
 /// let _ = roller.roll(&dice, true)?;

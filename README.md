@@ -135,7 +135,10 @@ use tyche::dice::roller::FastRand as FastRandRoller;
 // This is only possible with the "std" feature enabled (which it is by default)
 let mut roller = FastRandRoller::default();
 
-// Create a FastRand roller with a custom-seeded fastrand::Rng
+// Create a FastRand roller with a manual seed
+let mut roller = FastRandRoller::with_seed(0x750c38d574400);
+
+// Create a FastRand roller with a custom fastrand::Rng
 let rng = fastrand::Rng::with_seed(0x750c38d574400);
 let mut roller = FastRandRoller::new(rng);
 ```
