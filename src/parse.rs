@@ -36,7 +36,13 @@
 //! # Ok::<(), tyche::parse::Error>(())
 //! ```
 
-use std::{fmt, str};
+use alloc::{
+	boxed::Box,
+	fmt, format,
+	string::{String, ToString},
+	vec::Vec,
+};
+use core::str;
 
 use chumsky::prelude::*;
 
@@ -260,7 +266,7 @@ pub fn expr<'src>() -> impl Parser<'src, &'src str, Expr, extra::Err<Rich<'src, 
 	expr_part().then_ignore(end())
 }
 
-/// Error that can occur while parsing a string into a dice or expression-related structure via [`std::str::FromStr`].
+/// Error that can occur while parsing a string into a dice or expression-related structure via [`alloc::str::FromStr`].
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct Error {
@@ -269,7 +275,7 @@ pub struct Error {
 }
 
 #[allow(clippy::absolute_paths)]
-impl std::error::Error for Error {
+impl core::error::Error for Error {
 	fn description(&self) -> &str {
 		&self.details
 	}

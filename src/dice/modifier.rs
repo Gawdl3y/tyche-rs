@@ -1,6 +1,12 @@
 //! Dice modifiers and their related types.
 
-use std::fmt;
+use alloc::{
+	borrow::ToOwned,
+	format,
+	string::{String, ToString},
+	vec::Vec,
+};
+use core::fmt;
 
 use super::{roller::Roller, Error, Rolled};
 

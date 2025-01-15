@@ -1,6 +1,11 @@
 //! AST-like data structures for evaluating full mathematical dice expressions and working with their results.
 
-use std::fmt;
+use alloc::{
+	boxed::Box,
+	format,
+	string::{String, ToString},
+};
+use core::fmt;
 
 use crate::dice::{roller::Roller, Dice, Error as DiceError, Rolled};
 

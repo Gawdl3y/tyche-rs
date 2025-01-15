@@ -1,6 +1,7 @@
 //! Abstractions for rolling [`DieRoll`]s using various means.
 
-use std::{borrow::Cow, iter::Peekable};
+use alloc::{borrow::Cow, vec::Vec};
+use core::iter::Peekable;
 
 #[cfg(feature = "fastrand")]
 use fastrand::Rng;
@@ -71,7 +72,8 @@ pub trait Roller {
 /// # Ok::<(), tyche::dice::Error>(())
 /// ```
 #[cfg(feature = "fastrand")]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "std", derive(Default))]
 pub struct FastRand(Rng);
 
 #[cfg(feature = "fastrand")]

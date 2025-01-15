@@ -7,7 +7,13 @@
 pub mod modifier;
 pub mod roller;
 
-use std::{borrow::Cow, cmp, fmt};
+use alloc::{
+	borrow::Cow,
+	format,
+	string::{String, ToString},
+	vec::Vec,
+};
+use core::{cmp, fmt};
 
 use self::modifier::Condition;
 pub use self::{modifier::Modifier, roller::Roller};

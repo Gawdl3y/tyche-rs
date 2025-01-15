@@ -13,19 +13,24 @@ categories = [
 license = "LGPL-3.0-or-later"
 repository = "https://github.com/Gawdl3y/tyche-rs"
 edition = "2021"
+rust-version = "1.81"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["parse", "fastrand"]
+default = ["std", "parse", "fastrand"]
+std = ["thiserror/std", "chumsky?/std", "fastrand?/std"]
 parse = ["dep:chumsky"]
 fastrand = ["dep:fastrand"]
-build-binary = ["parse", "fastrand", "dep:ariadne"]
+build-binary = ["std", "parse", "fastrand", "dep:ariadne"]
 
 [dependencies]
-thiserror = "1.0.57"
-fastrand = { version = "2.0.1", optional = true }
-chumsky = { version = "1.0.0-alpha.7", optional = true, features = ["label"] }
+thiserror = { version = "2.0.11", default-features = false }
+fastrand = { version = "2.0.1", optional = true, default-features = false }
+chumsky = { version = "1.0.0-alpha.7", optional = true, default-features = false, features = [
+	"label",
+	"spill-stack",
+] }
 ariadne = { version = "0.4", optional = true }
 pretty-readme = "0.1.0"
 
