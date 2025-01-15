@@ -37,6 +37,7 @@ convenient extensions.
   - Maximum: `4d8max6`
 - Dice modifier chaining (applied in the order they're specified): `4d6rr1x>4`, `8d8min2kh4xo`
 - Roller abstractions, allowing custom die rolling behavior
+- Support for `no_std` (`alloc` is required)
 
 ## Installation
 
@@ -131,6 +132,7 @@ The most suitable "default" roller implementation is [`FastRand`], which generat
 use tyche::dice::roller::FastRand as FastRandRoller;
 
 // Create a FastRand roller with the default thread-local fastrand::Rng
+// This is only possible with the "std" feature enabled (which it is by default)
 let mut roller = FastRandRoller::default();
 
 // Create a FastRand roller with a custom-seeded fastrand::Rng
