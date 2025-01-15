@@ -36,7 +36,8 @@ fn main() {
 		parsed.into_output().expect("no output from parser without errors")
 	} else {
 		let mut colors = ColorGenerator::new();
-		let mut report = Report::build(ReportKind::Error, "input", 0).with_message("Unable to parse dice expression");
+		let mut report =
+			Report::build(ReportKind::Error, ("input", 0..input.len())).with_message("Unable to parse dice expression");
 
 		for err in parsed.errors() {
 			report.add_label(
