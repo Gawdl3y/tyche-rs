@@ -1,5 +1,5 @@
 #![doc = pretty_readme::docify!("README.md", "https://docs.rs/tyche/latest/tyche/", "./")]
-#![cfg_attr(not(any(doc, feature = "std", test)), no_std)]
+#![cfg_attr(not(any(doc, test)), no_std)]
 #![allow(clippy::tabs_in_doc_comments)]
 #![deny(macro_use_extern_crate, meta_variable_misuse, unit_bindings)]
 #![warn(
