@@ -2,7 +2,7 @@
 
 ## 0.3.1
 
-- Fixed panic while rolling a d0
+- Fixed panic while rolling a d0 ([#1](https://github.com/Gawdl3y/tyche-rs/issues/1))
 
 ## 0.3.0
 
