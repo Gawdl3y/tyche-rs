@@ -113,7 +113,11 @@ impl Roller for FastRand {
 	/// Rolls a single die using the [`fastrand::Rng`] the roller was created with.
 	#[inline]
 	fn roll_die(&mut self, sides: u8) -> DieRoll {
-		DieRoll::new(self.0.u8(1..=sides))
+		if sides > 0 {
+			DieRoll::new(self.0.u8(1..=sides))
+		} else {
+			DieRoll::new(0)
+		}
 	}
 }
 
