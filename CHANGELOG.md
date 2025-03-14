@@ -1,5 +1,9 @@
 # Tyche Changelog
 
+## 0.3.1
+
+- Fixed panic while rolling a d0
+
 ## 0.3.0
 
 - Added support for `no_std`
