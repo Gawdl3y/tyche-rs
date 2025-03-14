@@ -54,6 +54,14 @@ fn exploding_max_d4s() {
 }
 
 #[test]
+fn triple_d0() {
+	let dice = construct_plain(3, 0);
+	let rolled = rolls_successfully(&dice);
+	assert!(rolled.rolls.len() == 3);
+	assert!(rolled.rolls.iter().all(|roll| roll.val == 0));
+}
+
+#[test]
 fn all_dice_sides_occur() {
 	let dice = Dice::new(u8::MAX, 20);
 	let mut rng = FastRand::default();
@@ -218,16 +226,18 @@ fn construct_exploding(count: u8, sides: u8) -> Dice {
 	dice
 }
 
-fn rolls_successfully_and_in_range(dice: &Dice) -> Rolled {
+fn rolls_successfully(dice: &Dice) -> Rolled {
 	let result = FastRand::default().roll(dice, true);
 	assert!(result.is_ok());
+	result.unwrap()
+}
 
-	let rolled = result.unwrap();
+fn rolls_successfully_and_in_range(dice: &Dice) -> Rolled {
+	let rolled = rolls_successfully(dice);
 	rolls_in_range(&rolled.rolls, rolled.dice.sides);
-
 	rolled
 }
 
 fn rolls_in_range(rolls: &[DieRoll], sides: u8) {
-	assert!(!rolls.iter().any(|roll| roll.val < 1 || roll.val > sides));
+	assert!(rolls.iter().all(|roll| roll.val >= 1 && roll.val <= sides));
 }
