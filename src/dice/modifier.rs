@@ -375,7 +375,7 @@ impl Modifier {
 			Self::KeepLow(count) => self.apply_keep_low(rolled, count),
 			Self::Min(min) => self.apply_min(rolled, min),
 			Self::Max(max) => self.apply_max(rolled, max),
-		};
+		}
 
 		Ok(())
 	}
@@ -491,17 +491,17 @@ impl Modifier {
 			}
 
 			// Determine how many additional rolls qualify for explosion
-			to_explode = recurse
-				.then(|| {
-					explosions
-						.iter()
-						.filter(|roll| match cond {
-							Some(cond) => cond.check(roll.val),
-							None => roll.val == rolled.dice.sides,
-						})
-						.count()
-				})
-				.unwrap_or(0);
+			to_explode = if recurse {
+				explosions
+					.iter()
+					.filter(|roll| match cond {
+						Some(cond) => cond.check(roll.val),
+						None => roll.val == rolled.dice.sides,
+					})
+					.count()
+			} else {
+				0
+			};
 
 			// Add the explosions to the rolls and finish if there are no further rolls to explode
 			rolled.rolls.append(&mut explosions);
