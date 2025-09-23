@@ -22,7 +22,7 @@ use crate::expr::Describe;
 /// A set of one or more rollable dice with a specific number of sides, along with a collection of modifiers to apply to
 /// any resulting rolls from them.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[allow(clippy::exhaustive_structs)]
+#[expect(clippy::exhaustive_structs, reason = "Unlikely to change")]
 pub struct Dice {
 	/// Number of dice to roll
 	pub count: u8,
@@ -228,7 +228,7 @@ impl fmt::Display for DieRoll {
 
 /// Details about a modification made to a [`DieRoll`] as a result of a [`Modifier`] being applied to it
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(clippy::exhaustive_structs)]
+#[expect(clippy::exhaustive_structs, reason = "Unlikely to change")]
 pub struct ValChange {
 	/// Roll value before the change was made
 	pub before: u8,
@@ -242,7 +242,7 @@ pub struct ValChange {
 
 /// Representation of the result from rolling [`Dice`]
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[allow(clippy::exhaustive_structs)]
+#[expect(clippy::exhaustive_structs, reason = "Unlikely to change")]
 pub struct Rolled<'a> {
 	/// Each individual die roll that was made
 	pub rolls: Vec<DieRoll>,
@@ -292,7 +292,7 @@ impl Rolled<'_> {
 
 	/// Creates a new rolled set of dice from a given set of dice and an iterator of values.
 	#[must_use]
-	pub fn from_dice_and_rolls(dice: &Dice, rolls: impl IntoIterator<Item = u8>) -> Rolled {
+	pub fn from_dice_and_rolls(dice: &Dice, rolls: impl IntoIterator<Item = u8>) -> Rolled<'_> {
 		Rolled {
 			rolls: rolls.into_iter().map(DieRoll::new).collect(),
 			dice: Cow::Borrowed(dice),

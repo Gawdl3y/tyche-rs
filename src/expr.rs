@@ -82,7 +82,7 @@ impl Expr {
 	/// # Errors
 	/// If there is an integer overflow or division error encountered during any operations, or if an error occurs
 	/// during dice rolling, an error variant will be returned.
-	pub fn eval(&self, rng: &mut impl Roller) -> Result<Evaled, EvalError> {
+	pub fn eval(&self, rng: &mut impl Roller) -> Result<Evaled<'_>, EvalError> {
 		Ok(match self {
 			Self::Num(x) => Evaled::Num(*x),
 			Self::Dice(dice) => Evaled::Dice(rng.roll(dice, true).map_err(|err| EvalError::Dice(self.clone(), err))?),
@@ -312,7 +312,7 @@ pub enum CalcError {
 
 /// Operation type for an individual expression
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(clippy::exhaustive_enums)]
+#[expect(clippy::exhaustive_enums, reason = "No logical fallback")]
 pub enum OpType {
 	/// Single value, no operation
 	Value,

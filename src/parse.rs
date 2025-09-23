@@ -274,7 +274,7 @@ pub struct Error {
 	pub details: String,
 }
 
-#[allow(clippy::absolute_paths)]
+#[expect(clippy::absolute_paths, reason = "Similar type names")]
 impl core::error::Error for Error {
 	fn description(&self) -> &str {
 		&self.details
@@ -347,13 +347,13 @@ pub trait GenParser<T> {
 
 impl GenParser<Dice> for Dice {
 	#[inline]
-	#[allow(refining_impl_trait)]
+	#[expect(refining_impl_trait, reason = "Refining for Copy type")]
 	fn parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
 		dice()
 	}
 
 	#[inline]
-	#[allow(refining_impl_trait)]
+	#[expect(refining_impl_trait, reason = "Refining for Copy type")]
 	fn part_parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
 		dice_part()
 	}
@@ -361,13 +361,13 @@ impl GenParser<Dice> for Dice {
 
 impl GenParser<Modifier> for Modifier {
 	#[inline]
-	#[allow(refining_impl_trait)]
+	#[expect(refining_impl_trait, reason = "Refining for Copy type")]
 	fn parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
 		modifier()
 	}
 
 	#[inline]
-	#[allow(refining_impl_trait)]
+	#[expect(refining_impl_trait, reason = "Refining for Copy type")]
 	fn part_parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
 		modifier_part()
 	}
@@ -375,13 +375,13 @@ impl GenParser<Modifier> for Modifier {
 
 impl GenParser<Condition> for Condition {
 	#[inline]
-	#[allow(refining_impl_trait)]
+	#[expect(refining_impl_trait, reason = "Refining for Copy type")]
 	fn parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
 		condition()
 	}
 
 	#[inline]
-	#[allow(refining_impl_trait)]
+	#[expect(refining_impl_trait, reason = "Refining for Copy type")]
 	fn part_parser<'src>() -> impl Parser<'src, &'src str, Self, extra::Err<Rich<'src, char>>> + Copy {
 		condition_part()
 	}

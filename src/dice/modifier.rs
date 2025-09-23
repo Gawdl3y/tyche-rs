@@ -582,7 +582,7 @@ impl fmt::Display for Modifier {
 
 /// Test that die values can be checked against
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[allow(clippy::exhaustive_enums)]
+#[expect(clippy::exhaustive_enums, reason = "Unlikely to change, no logical fallback")]
 pub enum Condition {
 	/// Checks whether values are equal to its own value. Symbol: `=`
 	Eq(u8),

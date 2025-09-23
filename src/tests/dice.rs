@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use alloc::borrow::Cow;
 
 use crate::dice::{
 	roller::{FastRand, Roller},
@@ -226,13 +226,13 @@ fn construct_exploding(count: u8, sides: u8) -> Dice {
 	dice
 }
 
-fn rolls_successfully(dice: &Dice) -> Rolled {
+fn rolls_successfully(dice: &Dice) -> Rolled<'_> {
 	let result = FastRand::default().roll(dice, true);
 	assert!(result.is_ok());
 	result.unwrap()
 }
 
-fn rolls_successfully_and_in_range(dice: &Dice) -> Rolled {
+fn rolls_successfully_and_in_range(dice: &Dice) -> Rolled<'_> {
 	let rolled = rolls_successfully(dice);
 	rolls_in_range(&rolled.rolls, rolled.dice.sides);
 	rolled

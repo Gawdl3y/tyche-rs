@@ -139,7 +139,7 @@ impl Roller for FastRand {
 /// # Ok::<(), tyche::dice::Error>(())
 /// ```
 #[derive(Debug, Default, Clone)]
-#[allow(clippy::exhaustive_structs)]
+#[expect(clippy::exhaustive_structs, reason = "Highly unlikely to change")]
 pub struct Val(pub u8);
 
 impl Roller for Val {
@@ -168,7 +168,7 @@ impl Roller for Val {
 /// # Ok::<(), tyche::dice::Error>(())
 /// ```
 #[derive(Debug, Default, Clone)]
-#[allow(clippy::exhaustive_structs)]
+#[expect(clippy::exhaustive_structs, reason = "Highly unlikely to change")]
 pub struct Max;
 
 impl Roller for Max {
@@ -217,7 +217,10 @@ impl<I: Iterator<Item = u8>> Roller for Iter<I> {
 	/// # Panics
 	/// If the iterator has finished, this will panic.
 	#[inline]
-	#[allow(clippy::expect_used)]
+	#[expect(
+		clippy::expect_used,
+		reason = "Mostly for testing, otherwise manual checking of can_roll() is expected"
+	)]
 	fn roll_die(&mut self, _sides: u8) -> DieRoll {
 		DieRoll::new(self.0.next().expect("iterator is finished"))
 	}
