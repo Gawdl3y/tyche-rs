@@ -9,6 +9,7 @@ categories = [
 	"game-development",
 	"mathematics",
 	"parser-implementations",
+	"no-std",
 ]
 license = "LGPL-3.0-or-later"
 repository = "https://github.com/Gawdl3y/tyche-rs"
