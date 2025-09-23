@@ -188,7 +188,7 @@ pub fn condition_part<'src>() -> impl Parser<'src, &'src str, Condition, extra::
 	))
 	.labelled("condition symbol")
 	.or_not()
-	.then(text::int::<&'src str, _, _>(10).labelled("condition number"))
+	.then(text::int::<&'src str, _>(10).labelled("condition number"))
 	.try_map(|(condfn, val), span| {
 		let val = val
 			.parse()
